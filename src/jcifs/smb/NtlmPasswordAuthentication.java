@@ -314,6 +314,10 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
  * property values.
  */
     public NtlmPasswordAuthentication( String domain, String username, String password ) {
+        this(domain, username, passwordHash(password, LM_COMPATIBILITY));
+    }
+    
+    public NtlmPasswordAuthentication( String domain, String username, byte[] passwordHash ) {
         int ci;
 
         if (username != null) {
@@ -337,8 +341,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
 
         if( domain == null ) this.domain = DEFAULT_DOMAIN;
         if( username == null ) this.username = DEFAULT_USERNAME;
-        if( password == null ) password = DEFAULT_PASSWORD;
-        this.passwordHash = passwordHash(password);
+        this.passwordHash = passwordHash;
     }
 /**
  * Create an <tt>NtlmPasswordAuthentication</tt> object with raw password

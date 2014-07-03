@@ -117,7 +117,7 @@ public class SmbTransport extends Transport implements SmbConstants {
     }
 
     synchronized SmbSession getSmbSession() {
-        return getSmbSession( new NtlmPasswordAuthentication( null, null, null ));
+        return getSmbSession( new NtlmPasswordAuthentication( null, null, (byte[])null ));
     }
     synchronized SmbSession getSmbSession( NtlmPasswordAuthentication auth ) {
         SmbSession ssn;
