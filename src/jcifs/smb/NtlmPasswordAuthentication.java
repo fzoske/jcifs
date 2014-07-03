@@ -19,15 +19,20 @@
 
 package jcifs.smb;
 
-import java.io.UnsupportedEncodingException;
 import java.io.Serializable;
-import java.security.Principal;
-import java.security.MessageDigest;
+import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
-import java.util.Random;
+import java.security.MessageDigest;
+import java.security.Principal;
 import java.util.Arrays;
+import java.util.Random;
+
 import jcifs.Config;
-import jcifs.util.*;
+import jcifs.util.DES;
+import jcifs.util.Encdec;
+import jcifs.util.HMACT64;
+import jcifs.util.LogStream;
+import jcifs.util.MD4;
 
 /**
  * This class stores and encrypts NTLM user credentials. The default
@@ -87,48 +92,25 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
  * Generate the ANSI DES hash for the password associated with these credentials.
  */
     static public byte[] getPreNTLMResponse( String password, byte[] challenge ) {
-        byte[] p14 = new byte[14];
-        byte[] p21 = new byte[21];
-        byte[] p24 = new byte[24];
-        byte[] passwordBytes;
-        try {
-            passwordBytes = password.toUpperCase().getBytes( ServerMessageBlock.OEM_ENCODING );
-        } catch( UnsupportedEncodingException uee ) {
-            throw new RuntimeException("Try setting jcifs.encoding=US-ASCII", uee);
-        }
-        int passwordLength = passwordBytes.length;
-
-        // Only encrypt the first 14 bytes of the password for Pre 0.12 NT LM
-        if( passwordLength > 14) {
-            passwordLength = 14;
-        }
-        System.arraycopy( passwordBytes, 0, p14, 0, passwordLength );
-        E( p14, S8, p21);
-        E( p21, challenge, p24);
-        return p24;
+    	return getPreNTLMResponse(passwordHash(password, 1), challenge);
     }
+    
+	static public byte[] getPreNTLMResponse(byte[] hash, byte[] challenge) {
+		byte[] p24 = new byte[24];
+		E(hash, challenge, p24);
+		return p24;
+	}
+
 /**
  * Generate the Unicode MD4 hash for the password associated with these credentials.
  */
     static public byte[] getNTLMResponse( String password, byte[] challenge ) {
-        byte[] uni = null;
+    	return getNTLMResponse(passwordHash(password, 3), challenge);
+    }
+    static public byte[] getNTLMResponse( byte[] passwordHash, byte[] challenge ) {
         byte[] p21 = new byte[21];
         byte[] p24 = new byte[24];
-
-        try {
-            uni = password.getBytes( SmbConstants.UNI_ENCODING );
-        } catch( UnsupportedEncodingException uee ) {
-            if( log.level > 0 )
-                uee.printStackTrace( log );
-        }
-        MD4 md4 = new MD4();
-        md4.update( uni );
-        try {
-            md4.digest(p21, 0, 16);
-        } catch (Exception ex) {
-            if( log.level > 0 )
-                ex.printStackTrace( log );
-        }
+        System.arraycopy(passwordHash, 0, p21, 0, 16);        
         E( p21, challenge, p24 );
         return p24;
     }
@@ -144,13 +126,14 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
      */ 
     public static byte[] getLMv2Response(String domain, String user,
             String password, byte[] challenge, byte[] clientChallenge) {
+    	return getLMv2Response(domain, user, passwordHash(password, 5), challenge, clientChallenge);
+    }
+    public static byte[] getLMv2Response(String domain, String user,
+            byte[] passwordHash, byte[] challenge, byte[] clientChallenge) {
         try {
-            byte[] hash = new byte[16];
             byte[] response = new byte[24];
 // The next 2-1/2 lines of this should be placed with nTOWFv1 in place of password
-            MD4 md4 = new MD4();
-            md4.update(password.getBytes(SmbConstants.UNI_ENCODING));
-            HMACT64 hmac = new HMACT64(md4.digest());
+            HMACT64 hmac = new HMACT64(passwordHash);
             hmac.update(user.toUpperCase().getBytes(SmbConstants.UNI_ENCODING));
             hmac.update(domain.toUpperCase().getBytes(SmbConstants.UNI_ENCODING));
             hmac = new HMACT64(hmac.digest());
@@ -194,20 +177,20 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
     {
         if (password == null)
             throw new RuntimeException("Password parameter is required");
-        try {
-            MD4 md4 = new MD4();
-            md4.update(password.getBytes(SmbConstants.UNI_ENCODING));
-            return md4.digest();
-        } catch (UnsupportedEncodingException uee) {
-            throw new RuntimeException(uee.getMessage());
-        }
+        return nTOWFv1(passwordHash(password, 5));
+    }
+    public static byte[] nTOWFv1(byte[] passwordHash)
+    {
+    	return passwordHash;
     }
     public static byte[] nTOWFv2(String domain, String username, String password)
     {
+    	return nTOWFv2(domain, username, passwordHash(password, 5));
+    }
+    public static byte[] nTOWFv2(String domain, String username, byte[] passwordHash)
+    {
         try {
-            MD4 md4 = new MD4();
-            md4.update(password.getBytes(SmbConstants.UNI_ENCODING));
-            HMACT64 hmac = new HMACT64(md4.digest());
+            HMACT64 hmac = new HMACT64(passwordHash);
             hmac.update(username.toUpperCase().getBytes(SmbConstants.UNI_ENCODING));
             hmac.update(domain.getBytes(SmbConstants.UNI_ENCODING));
             return hmac.digest();
@@ -276,7 +259,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
 
     String domain;
     String username;
-    String password;
+    byte[] passwordHash;
     byte[] ansiHash;
     byte[] unicodeHash;
     boolean hashesExternal = false;
@@ -290,8 +273,10 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
  */
 
     public NtlmPasswordAuthentication( String userInfo ) {
-        domain = username = password = null;
+        domain = username = null;
 
+        String password = null;
+        
         if( userInfo != null ) {
             try {
                 userInfo = unescape( userInfo );
@@ -318,7 +303,8 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
 
         if( domain == null ) this.domain = DEFAULT_DOMAIN;
         if( username == null ) this.username = DEFAULT_USERNAME;
-        if( password == null ) this.password = DEFAULT_PASSWORD;
+        if( password == null ) password = DEFAULT_PASSWORD;
+		this.passwordHash = passwordHash(password);
     }
 /**
  * Create an <tt>NtlmPasswordAuthentication</tt> object from a
@@ -346,13 +332,13 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
 
         this.domain = domain;
         this.username = username;
-        this.password = password;
 
         initDefaults();
 
         if( domain == null ) this.domain = DEFAULT_DOMAIN;
         if( username == null ) this.username = DEFAULT_USERNAME;
-        if( password == null ) this.password = DEFAULT_PASSWORD;
+        if( password == null ) password = DEFAULT_PASSWORD;
+        this.passwordHash = passwordHash(password);
     }
 /**
  * Create an <tt>NtlmPasswordAuthentication</tt> object with raw password
@@ -367,7 +353,6 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
         }
         this.domain = domain;
         this.username = username;
-        this.password = null;
         this.challenge = challenge;
         this.ansiHash = ansiHash;
         this.unicodeHash = unicodeHash;
@@ -394,8 +379,8 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
  * used. There is no way to retrieve a users password in plain text unless
  * it is supplied by the user at runtime.
  */
-    public String getPassword() {
-        return password;
+    public byte[] getPasswordHash() {
+        return passwordHash;
     }
 /**
  * Return the domain and username in the format:
@@ -416,9 +401,9 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
         switch (LM_COMPATIBILITY) {
         case 0:
         case 1:
-            return getPreNTLMResponse( password, challenge );
+            return getPreNTLMResponse( passwordHash, challenge );
         case 2:
-            return getNTLMResponse( password, challenge );
+            return getNTLMResponse( passwordHash, challenge );
         case 3:
         case 4:
         case 5:
@@ -426,10 +411,10 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
                 clientChallenge = new byte[8];
                 RANDOM.nextBytes( clientChallenge );
             }
-            return getLMv2Response(domain, username, password, challenge,
+            return getLMv2Response(domain, username, passwordHash, challenge,
                     clientChallenge);
         default:
-            return getPreNTLMResponse( password, challenge );
+            return getPreNTLMResponse( passwordHash, challenge );
         }
     }
 /**
@@ -443,7 +428,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
         case 0:
         case 1:
         case 2:
-            return getNTLMResponse( password, challenge );
+            return getNTLMResponse( passwordHash, challenge );
         case 3:
         case 4:
         case 5:
@@ -457,7 +442,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
             */
             return new byte[0];
         default:
-            return getNTLMResponse( password, challenge );
+            return getNTLMResponse( passwordHash, challenge );
         }
     }
 
@@ -514,12 +499,11 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
         if (hashesExternal) return;
         try {
             MD4 md4 = new MD4();
-            md4.update(password.getBytes(SmbConstants.UNI_ENCODING)); 
             switch (LM_COMPATIBILITY) {
             case 0:
             case 1:
             case 2:
-                md4.update(md4.digest()); 
+                md4.update(passwordHash); 
                 md4.digest(dest, offset, 16); 
                 break; 
             case 3:
@@ -530,7 +514,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
                     RANDOM.nextBytes( clientChallenge );
                 }
 
-                HMACT64 hmac = new HMACT64(md4.digest());
+                HMACT64 hmac = new HMACT64(passwordHash);
                 hmac.update(username.toUpperCase().getBytes(
                         SmbConstants.UNI_ENCODING));
                 hmac.update(domain.toUpperCase().getBytes(
@@ -544,7 +528,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
                 userKey.digest(dest, offset, 16); 
                 break; 
             default: 
-                md4.update(md4.digest()); 
+                md4.update(passwordHash); 
                 md4.digest(dest, offset, 16); 
                 break; 
             } 
@@ -552,6 +536,47 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
             throw new SmbException("", e);
         }
     } 
+    
+    public byte[] passwordHash(String password) {
+    	return passwordHash(password, LM_COMPATIBILITY);
+    }
+    
+    public static byte[] passwordHash(String password, int compatibility) {
+        try {
+        	switch (compatibility) {
+        	case 0:
+            case 1:
+            	byte[] p14 = new byte[14];
+                byte[] p21 = new byte[21];
+                byte[] passwordBytes;
+                try {
+                    passwordBytes = password.toUpperCase().getBytes( ServerMessageBlock.OEM_ENCODING );
+                } catch( UnsupportedEncodingException uee ) {
+                    throw new RuntimeException("Try setting jcifs.encoding=US-ASCII", uee);
+                }
+                int passwordLength = passwordBytes.length;
+
+                // Only encrypt the first 14 bytes of the password for Pre 0.12 NT LM
+                if( passwordLength > 14) {
+                    passwordLength = 14;
+                }
+                System.arraycopy( passwordBytes, 0, p14, 0, passwordLength );
+                E( p14, S8, p21);
+                return p21;
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            	MD4 md4 = new MD4();
+    			md4.update(password.getBytes(SmbConstants.UNI_ENCODING));
+    			return md4.digest();
+            default: 
+                throw new RuntimeException("Unsupported lmCompatibility mode!"); 
+        	}
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(e);
+		}
+    }
 
 /**
  * Compares two <tt>NtlmPasswordAuthentication</tt> objects for
@@ -570,7 +595,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
                      * hashes and the other does then they will not be considered equal even
                      * though they may be.
                      */
-                } else if( !hashesExternal && password.equals( ntlm.password )) {
+                } else if( !hashesExternal && passwordHash.equals( ntlm.passwordHash )) {
                     return true;
                 }
             }

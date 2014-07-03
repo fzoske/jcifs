@@ -20,19 +20,16 @@
 package jcifs.http;
 
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-
 import java.net.Authenticator;
 import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLDecoder;
-
 import java.security.Permission;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,13 +38,12 @@ import java.util.List;
 import java.util.Map;
 
 import jcifs.Config;
-
 import jcifs.ntlmssp.NtlmFlags;
 import jcifs.ntlmssp.NtlmMessage;
 import jcifs.ntlmssp.Type1Message;
 import jcifs.ntlmssp.Type2Message;
 import jcifs.ntlmssp.Type3Message;
-
+import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.util.Base64;
 
 /**
@@ -563,7 +559,7 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
                 } catch (Exception ex) { }
             }
             Type2Message type2 = (Type2Message) message;
-            message = new Type3Message(type2, password, domain, user,
+            message = new Type3Message(type2, NtlmPasswordAuthentication.passwordHash(password, LM_COMPATIBILITY), domain, user,
                     Type3Message.getDefaultWorkstation(), 0);
         }
         return message;

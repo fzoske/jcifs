@@ -20,20 +20,13 @@
 package jcifs.ntlmssp;
 
 import java.io.IOException;
-
 import java.net.UnknownHostException;
-
 import java.security.SecureRandom;
 
 import jcifs.Config;
-
 import jcifs.netbios.NbtAddress;
-
 import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.util.HMACT64;
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
-import java.security.GeneralSecurityException;
 import jcifs.util.MD4;
 import jcifs.util.RC4;
 
@@ -111,34 +104,30 @@ public class Type3Message extends NtlmMessage {
         setDomain(domain);
         String user = getDefaultUser();
         setUser(user);
-        String password = getDefaultPassword();
-        switch (LM_COMPATIBILITY) {
-        case 0:
-        case 1:
-            setLMResponse(getLMResponse(type2, password));
-            setNTResponse(getNTResponse(type2, password));
-            break;
-        case 2:
-            byte[] nt = getNTResponse(type2, password);
-            setLMResponse(nt);
-            setNTResponse(nt);
-            break;
-        case 3:
-        case 4:
-        case 5:
-            byte[] clientChallenge = new byte[8];
-            RANDOM.nextBytes(clientChallenge);
-            setLMResponse(getLMv2Response(type2, domain, user, password,
-                    clientChallenge));
-            /*
-            setNTResponse(getNTLMv2Response(type2, domain, user, password,
-                    clientChallenge));
-            */
-            break;
-        default:
-            setLMResponse(getLMResponse(type2, password));
-            setNTResponse(getNTResponse(type2, password));
-        }
+	    byte[] password = NtlmPasswordAuthentication.passwordHash(getDefaultPassword(), LM_COMPATIBILITY);
+				
+		switch (LM_COMPATIBILITY) {
+		case 0:
+		case 1:
+			setLMResponse(getLMResponse(type2, password));
+			setNTResponse(getNTResponse(type2, password));
+			break;
+		case 2:
+			byte[] nt = getNTResponse(type2, password);
+			setLMResponse(nt);
+			setNTResponse(nt);
+			break;
+		case 3:
+		case 4:
+		case 5:
+			byte[] clientChallenge = new byte[8];
+			RANDOM.nextBytes(clientChallenge);
+			setLMResponse(getLMv2Response(type2, domain, user, password, clientChallenge));
+			break;
+		default:
+			setLMResponse(getLMResponse(type2, password));
+			setNTResponse(getNTResponse(type2, password));
+		}    
     }
 
     /**
@@ -151,7 +140,7 @@ public class Type3Message extends NtlmMessage {
      * @param workstation The workstation from which authentication is
      * taking place.
      */
-    public Type3Message(Type2Message type2, String password, String domain,
+    public Type3Message(Type2Message type2, byte[] password, String domain,
             String user, String workstation, int flags) {
         setFlags(flags | getDefaultFlags(type2));
         if (workstation == null)
@@ -531,14 +520,14 @@ public class Type3Message extends NtlmMessage {
      * @param password The password.
      * @return A <code>byte[]</code> containing the LanManager response.
      */
-    public static byte[] getLMResponse(Type2Message type2, String password) {
+    public static byte[] getLMResponse(Type2Message type2, byte[] password) {
         if (type2 == null || password == null) return null;
         return NtlmPasswordAuthentication.getPreNTLMResponse(password,
                 type2.getChallenge());
     }
 
     public static byte[] getLMv2Response(Type2Message type2,
-            String domain, String user, String password,
+            String domain, String user, byte[] password,
                     byte[] clientChallenge) {
         if (type2 == null || domain == null || user == null ||
                 password == null || clientChallenge == null) {
@@ -569,7 +558,7 @@ public class Type3Message extends NtlmMessage {
      * @param password The password.
      * @return A <code>byte[]</code> containing the NT response.
      */
-    public static byte[] getNTResponse(Type2Message type2, String password) {
+    public static byte[] getNTResponse(Type2Message type2, byte[] password) {
         if (type2 == null || password == null) return null;
         return NtlmPasswordAuthentication.getNTLMResponse(password,
                 type2.getChallenge());

@@ -18,15 +18,12 @@
 
 package jcifs.smb;
 
-import java.util.Arrays;
 import jcifs.Config;
 
 class SmbComSessionSetupAndX extends AndXServerMessageBlock {
 
     private static final int BATCH_LIMIT =
             Config.getInt( "jcifs.smb.client.SessionSetupAndX.TreeConnectAndX", 1 );
-    private static final boolean DISABLE_PLAIN_TEXT_PASSWORDS =
-            Config.getBoolean( "jcifs.smb.client.disablePlainTextPasswords", true );
 
     private byte[] lmHash, ntHash, blob = null;
     private int sessionKey, capabilities;
@@ -59,20 +56,8 @@ class SmbComSessionSetupAndX extends AndXServerMessageBlock {
                     if (lmHash.length == 0 && ntHash.length == 0) {
                         throw new RuntimeException("Null setup prohibited.");
                     }
-                } else if( DISABLE_PLAIN_TEXT_PASSWORDS ) {
+                } else  {
                     throw new RuntimeException( "Plain text passwords are disabled" );
-                } else if( useUnicode ) {
-                    // plain text
-                    String password = auth.getPassword();
-                    lmHash = new byte[0];
-                    ntHash = new byte[(password.length() + 1) * 2];
-                    writeString( password, ntHash, 0 );
-                } else {
-                    // plain text
-                    String password = auth.getPassword();
-                    lmHash = new byte[(password.length() + 1) * 2];
-                    ntHash = new byte[0];
-                    writeString( password, lmHash, 0 );
                 }
                 accountName = auth.username;
                 if (useUnicode)

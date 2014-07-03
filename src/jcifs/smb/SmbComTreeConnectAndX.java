@@ -119,18 +119,14 @@ class SmbComTreeConnectAndX extends AndXServerMessageBlock {
 
         if( session.transport.server.security == SECURITY_SHARE &&
                         ( session.auth.hashesExternal ||
-                        session.auth.password.length() > 0 )) {
+                        session.auth.passwordHash.length > 0 )) {
 
             if( session.transport.server.encryptedPasswords ) {
                 // encrypted
                 password = session.auth.getAnsiHash( session.transport.server.encryptionKey );
                 passwordLength = password.length;
-            } else if( DISABLE_PLAIN_TEXT_PASSWORDS ) {
+            } else  {
                 throw new RuntimeException( "Plain text passwords are disabled" );
-            } else {
-                // plain text
-                password = new byte[(session.auth.password.length() + 1) * 2];
-                passwordLength = writeString( session.auth.password, password, 0 );
             }
         } else {
             // no password in tree connect
@@ -147,7 +143,7 @@ class SmbComTreeConnectAndX extends AndXServerMessageBlock {
 
         if( session.transport.server.security == SECURITY_SHARE &&
                         ( session.auth.hashesExternal ||
-                        session.auth.password.length() > 0 )) {
+                        session.auth.passwordHash.length > 0 )) {
             System.arraycopy( password, 0, dst, dstIndex, passwordLength );
             dstIndex += passwordLength;
         } else {
