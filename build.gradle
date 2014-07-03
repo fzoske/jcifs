@@ -1,3 +1,5 @@
+apply plugin: 'idea'
+apply plugin: 'eclipse'
 apply plugin: 'java'
 
 sourceCompatibility = 1.6
@@ -9,14 +11,6 @@ repositories {
 
 dependencies {
     compile 'javax.servlet:servlet-api:2.5'
-}
-
-sourceSets {
-    main {
-        java {
-            srcDir 'src'
-        }
-    }
 }
 
 jar {
