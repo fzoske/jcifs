@@ -1,0 +1,28 @@
+apply plugin: 'java'
+
+sourceCompatibility = 1.6
+version = '1.3.17-hashed-passwords'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'javax.servlet:servlet-api:2.5'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
+
+jar {
+    destinationDir = new File(".")
+    archiveName = "jcifs-" + version + ".jar"
+    manifest {
+        attributes("Implementation-Title": "JCIFS hashed password fork", "Implementation-Version": version)
+    }
+}
