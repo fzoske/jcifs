@@ -18,8 +18,13 @@
 
 package jcifs.smb;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 abstract class SmbComNtTransactionResponse extends SmbComTransactionResponse {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    
     SmbComNtTransactionResponse() {
         super();
     }
@@ -53,8 +58,7 @@ abstract class SmbComNtTransactionResponse extends SmbComTransactionResponse {
         setupCount = buffer[bufferIndex] & 0xFF;
         bufferIndex += 2;
         if( setupCount != 0 ) {
-            if( log.level >= 3 )
-                log.println( "setupCount is not zero: " + setupCount );
+            logger.info( "setupCount is not zero: " + setupCount );
         }
 
         return bufferIndex - start;

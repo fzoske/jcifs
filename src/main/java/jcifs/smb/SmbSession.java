@@ -18,18 +18,23 @@
 
 package jcifs.smb;
 
-import java.util.Vector;
-import java.util.Enumeration;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Vector;
+
 import jcifs.Config;
 import jcifs.UniAddress;
 import jcifs.netbios.NbtAddress;
-import jcifs.util.MD4;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SmbSession {
 
+    private static final Logger logger = LoggerFactory.getLogger(SmbSession.class);
+    
     private static final String LOGON_SHARE =
                 Config.getProperty( "jcifs.smb.client.logonShare", null );
     private static final int LOOKUP_RESP_LIMIT =
@@ -50,8 +55,7 @@ public final class SmbSession {
         SmbTransport trans = SmbTransport.getSmbTransport( dc, 0 );
         if (USERNAME == null) {
             trans.connect();
-            if (SmbTransport.log.level >= 3)
-                SmbTransport.log.println(
+            logger.info(
                     "Default credentials (jcifs.smb.client.username/password)" +
                     " not specified. SMB signing may not work propertly." +
                     "  Skipping DC interrogation." );
@@ -78,9 +82,7 @@ synchronized (DOMAIN) {
                         dc_list = list;
                     } else { /* keep using the old list */
                         dc_list_expiration = now + 1000 * 60 * 15; /* 15 min */
-                        if (SmbTransport.log.level >= 2) {
-                            SmbTransport.log.println( "Failed to retrieve DC list from WINS" );
-                        }
+                        logger.warn( "Failed to retrieve DC list from WINS" );
                     }
                 }
 
@@ -91,11 +93,8 @@ synchronized (DOMAIN) {
                         try {
                             return interrogate( dc_list[i] );
                         } catch (SmbException se) {
-                            if (SmbTransport.log.level >= 2) {
-                                SmbTransport.log.println( "Failed validate DC: " + dc_list[i] );
-                                if (SmbTransport.log.level > 2)
-                                    se.printStackTrace( SmbTransport.log );
-                            }
+                            logger.warn( "Failed validate DC: " + dc_list[i] );
+                            logger.info(se.getMessage(), se);
                         }
                         dc_list[i] = null;
                     }
@@ -273,8 +272,7 @@ synchronized (transport()) {
              * Session Setup And X Request / Response
              */
     
-            if( transport.log.level >= 4 )
-                transport.log.println( "sessionSetup: accountName=" + auth.username + ",primaryDomain=" + auth.domain );
+            logger.debug( "sessionSetup: accountName=" + auth.username + ",primaryDomain=" + auth.domain );
     
             /* We explicitly set uid to 0 here to prevent a new
              * SMB_COM_SESSION_SETUP_ANDX from having it's uid set to an
@@ -348,8 +346,7 @@ synchronized (transport()) {
                             nctx = new NtlmContext(auth, doSigning);
                         }
     
-                        if (SmbTransport.log.level >= 4)
-                            SmbTransport.log.println(nctx);
+                        logger.debug( String.valueOf(nctx) );
     
                         if (nctx.isEstablished()) {
 

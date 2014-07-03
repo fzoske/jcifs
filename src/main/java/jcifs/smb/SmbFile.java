@@ -18,25 +18,28 @@
 
 package jcifs.smb;
 
-import java.net.URLConnection;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.net.UnknownHostException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.UnknownHostException;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.security.Principal;
-import jcifs.Config;
-import jcifs.util.LogStream;
-import jcifs.UniAddress;
-import jcifs.netbios.NbtAddress;
-import jcifs.dcerpc.*;
-import jcifs.dcerpc.msrpc.*;
 
-import java.util.Date;
+import jcifs.Config;
+import jcifs.UniAddress;
+import jcifs.dcerpc.DcerpcHandle;
+import jcifs.dcerpc.msrpc.MsrpcDfsRootEnum;
+import jcifs.dcerpc.msrpc.MsrpcShareEnum;
+import jcifs.dcerpc.msrpc.MsrpcShareGetInfo;
+import jcifs.netbios.NbtAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class represents a resource on an SMB network. Mainly these
@@ -356,7 +359,7 @@ public class SmbFile extends URLConnection implements SmbConstants {
     static final int HASH_DOT     = ".".hashCode();
     static final int HASH_DOT_DOT = "..".hashCode();
 
-    static LogStream log = LogStream.getInstance();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     static long attrExpirationPeriod;
     static boolean ignoreCopyToException;
 
@@ -697,8 +700,7 @@ public class SmbFile extends URLConnection implements SmbConstants {
 
             do {
                 try {
-                    if (log.level >= 2)
-                        log.println("DFS redirect: " + dr);
+                    logger.warn("DFS redirect: " + dr);
 
                     UniAddress addr = UniAddress.getByName(dr.server);
                     SmbTransport trans = SmbTransport.getSmbTransport(addr, url.getPort());
@@ -731,8 +733,7 @@ public class SmbFile extends URLConnection implements SmbConstants {
             if (se != null)
                 throw se;
 
-            if (log.level >= 3)
-                log.println( dr );
+            logger.info( String.valueOf(dr) );
 
             dfsReferral = dr;
             if (dr.pathConsumed < 0) {
@@ -905,9 +906,7 @@ int addressIndex;
         }
 
         try {
-            if( log.level >= 3 )
-                log.println( "doConnect: " + addr );
-
+            logger.info( "doConnect: " + addr );
             tree.treeConnect(null, null);
         } catch (SmbAuthException sae) {
             NtlmPasswordAuthentication a;
@@ -928,8 +927,9 @@ int addressIndex;
                 }
                 tree.treeConnect(null, null);
             } else {
-                if (log.level >= 1 && hasNextAddress())
-                    sae.printStackTrace(log);
+                if (hasNextAddress()) {
+                    logger.error(sae.getMessage(), sae);
+                }
                 throw sae;
             }
         }
@@ -958,8 +958,7 @@ int addressIndex;
             } catch(SmbException se) {
                 if (getNextAddress() == null) 
                     throw se;
-                if (log.level >= 3)
-                    se.printStackTrace(log);
+                logger.info(se.getMessage(), se);
             }
         }
     }
@@ -971,8 +970,7 @@ int addressIndex;
 
         connect0();
 
-        if( log.level >= 3 )
-            log.println( "open0: " + unc );
+        logger.info( "open0: " + unc );
 
         /*
          * NT Create AndX / Open AndX Request / Response
@@ -980,12 +978,12 @@ int addressIndex;
 
         if( tree.session.transport.hasCapability( ServerMessageBlock.CAP_NT_SMBS )) {
             SmbComNTCreateAndXResponse response = new SmbComNTCreateAndXResponse();
-SmbComNTCreateAndX request = new SmbComNTCreateAndX( unc, flags, access, shareAccess, attrs, options, null );
-if (this instanceof SmbNamedPipe) {
-    request.flags0 |= 0x16;
-    request.desiredAccess |= 0x20000;
-    response.isExtended = true;
-}
+            SmbComNTCreateAndX request = new SmbComNTCreateAndX( unc, flags, access, shareAccess, attrs, options, null );
+            if (this instanceof SmbNamedPipe) {
+                request.flags0 |= 0x16;
+                request.desiredAccess |= 0x20000;
+                response.isExtended = true;
+            }
             send( request, response );
             f = response.fid;
             attributes = response.extFileAttributes & ATTR_GET_MASK;
@@ -1013,8 +1011,7 @@ if (this instanceof SmbNamedPipe) {
     }
     void close( int f, long lastWriteTime ) throws SmbException {
 
-        if( log.level >= 3 )
-            log.println( "close: " + f );
+        logger.info( "close: " + f );
 
         /*
          * Close Request / Response
@@ -1334,8 +1331,7 @@ if (this instanceof SmbNamedPipe) {
     Info queryPath( String path, int infoLevel ) throws SmbException {
         connect0();
 
-        if (log.level >= 3)
-            log.println( "queryPath: " + path );
+        logger.info( "queryPath: " + path );
 
         /* normally we'd check the negotiatedCapabilities for CAP_NT_SMBS
          * however I can't seem to get a good last modified time from
@@ -1777,8 +1773,7 @@ if (this instanceof SmbNamedPipe) {
                         map.put(e, e);
                 }
             } catch (IOException ioe) {
-                if (log.level >= 4)
-                    ioe.printStackTrace(log);
+                logger.debug(ioe.getMessage(), ioe);
             }
         }
 
@@ -1789,8 +1784,7 @@ if (this instanceof SmbNamedPipe) {
                 try {
                     entries = doMsrpcShareEnum();
                 } catch(IOException ioe) {
-                    if (log.level >= 3)
-                        ioe.printStackTrace(log);
+                    logger.info(ioe.getMessage(), ioe);
                     entries = doNetShareEnum();
                 }
                 for (int ei = 0; ei < entries.length; ei++) {
@@ -1800,8 +1794,7 @@ if (this instanceof SmbNamedPipe) {
                 }
                 break;
             } catch(IOException ioe) {
-                if (log.level >= 3)
-                    ioe.printStackTrace(log);
+                logger.info(ioe.getMessage(), ioe);
                 last = ioe;
             }
             addr = getNextAddress();
@@ -1851,8 +1844,7 @@ if (this instanceof SmbNamedPipe) {
             try {
                 handle.close();
             } catch(IOException ioe) {
-                if (log.level >= 4)
-                    ioe.printStackTrace(log);
+                logger.debug(ioe.getMessage(), ioe);
             }
         }
     }
@@ -1882,8 +1874,7 @@ if (this instanceof SmbNamedPipe) {
             try {
                 handle.close();
             } catch(IOException ioe) {
-                if (log.level >= 4)
-                    ioe.printStackTrace(log);
+                logger.debug(ioe.getMessage(), ioe);
             }
         }
     }
@@ -1980,8 +1971,7 @@ if (this instanceof SmbNamedPipe) {
         req = new Trans2FindFirst2( path, wildcard, searchAttributes );
         resp = new Trans2FindFirst2Response();
 
-        if( log.level >= 3 )
-            log.println( "doFindFirstNext: " + req.path );
+        logger.info( "doFindFirstNext: " + req.path );
 
         send( req, resp );
 
@@ -2033,8 +2023,7 @@ if (this instanceof SmbNamedPipe) {
         try {
             send( new SmbComFindClose2( sid ), blank_resp() );
         } catch (SmbException se) {
-            if( log.level >= 4 )
-                se.printStackTrace( log );
+            logger.debug(se.getMessage(), se);
         }
     }
 
@@ -2063,8 +2052,7 @@ if (this instanceof SmbNamedPipe) {
             throw new SmbException( "Invalid operation for workgroups, servers, or shares" );
         }
 
-        if( log.level >= 3 )
-            log.println( "renameTo: " + unc + " -> " + dest.unc );
+        logger.info( "renameTo: " + unc + " -> " + dest.unc );
 
         attrExpiration = sizeExpiration = 0;
         dest.attrExpiration = 0;
@@ -2258,8 +2246,7 @@ if (this instanceof SmbNamedPipe) {
                 if (ignoreCopyToException == false)
                     throw new SmbException("Failed to copy file from [" + this.toString() + "] to [" + dest.toString() + "]", se);
 
-                if( log.level > 1 )
-                    se.printStackTrace( log );
+                logger.error(se.getMessage(), se);
             } finally {
                 close();
             }
@@ -2393,8 +2380,7 @@ if (this instanceof SmbNamedPipe) {
          * Delete or Delete Directory Request / Response
          */
 
-        if( log.level >= 3 )
-            log.println( "delete: " + fileName );
+        logger.info( "delete: " + fileName );
 
         if(( attributes & ATTR_DIRECTORY ) != 0 ) {
 
@@ -2523,8 +2509,7 @@ if (this instanceof SmbNamedPipe) {
          * Create Directory Request / Response
          */
 
-        if( log.level >= 3 )
-            log.println( "mkdir: " + path );
+        logger.info( "mkdir: " + path );
 
         send( new SmbComCreateDirectory( path ), blank_resp() );
 
@@ -2950,8 +2935,7 @@ if (this instanceof SmbNamedPipe) {
             try {
                 handle.close();
             } catch(IOException ioe) {
-                if (log.level >= 1)
-                    ioe.printStackTrace(log);
+                logger.error(ioe.getMessage(), ioe);
             }
         }
 

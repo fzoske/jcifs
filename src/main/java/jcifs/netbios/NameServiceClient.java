@@ -18,13 +18,20 @@
 
 package jcifs.netbios;
 
-import java.net.*;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.StringTokenizer;
+
 import jcifs.Config;
 import jcifs.util.Hexdump;
-import jcifs.util.LogStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class NameServiceClient implements Runnable {
 
@@ -48,7 +55,7 @@ class NameServiceClient implements Runnable {
     private static final InetAddress LADDR = Config.getInetAddress( "jcifs.netbios.laddr", null );
     private static final String RO = Config.getProperty( "jcifs.resolveOrder" );
 
-    private static LogStream log = LogStream.getInstance();
+    private final Logger logger = LoggerFactory.getLogger(NameServiceClient.class);
 
     private final Object LOCK = new Object();
 
@@ -109,10 +116,8 @@ class NameServiceClient implements Runnable {
                     tmp[i++] = RESOLVER_LMHOSTS;
                 } else if( s.equalsIgnoreCase( "WINS" )) {
                     if( NbtAddress.getWINSAddress() == null ) {
-                        if( log.level > 1 ) {
-                            log.println( "NetBIOS resolveOrder specifies WINS however the " +
+                        logger.warn( "NetBIOS resolveOrder specifies WINS however the " +
                                     "jcifs.netbios.wins property has not been set" );
-                        }
                         continue;
                     }
                     tmp[i++] = RESOLVER_WINS;
@@ -120,8 +125,8 @@ class NameServiceClient implements Runnable {
                     tmp[i++] = RESOLVER_BCAST;
                 } else if( s.equalsIgnoreCase( "DNS" )) {
                     ; // skip
-                } else if( log.level > 1 ) {
-                    log.println( "unknown resolver method: " + s );
+                } else {
+                    logger.warn( "unknown resolver method: " + s );
                 }
             }
             resolveOrder = new int[i];
@@ -179,8 +184,7 @@ class NameServiceClient implements Runnable {
                 socket.setSoTimeout( closeTimeout );
                 socket.receive( in );
 
-                if( log.level > 3 )
-                    log.println( "NetBIOS: new data read from socket" );
+                logger.debug( "NetBIOS: new data read from socket" );
 
                 nameTrnId = NameServicePacket.readNameTrnId( rcv_buf, 0 );
                 response = (NameServicePacket)responseTable.get( new Integer( nameTrnId ));
@@ -191,9 +195,9 @@ class NameServiceClient implements Runnable {
                     response.readWireFormat( rcv_buf, 0 );
                     response.received = true;
 
-                    if( log.level > 3 ) {
-                        log.println( response );
-                        Hexdump.hexdump( log, rcv_buf, 0, in.getLength() );
+                    if( logger.isDebugEnabled() ) {
+                        logger.debug( String.valueOf(response) );
+                        Hexdump.hexdumpDebug( logger, rcv_buf, 0, in.getLength() );
                     }
 
                     response.notify();
@@ -201,8 +205,7 @@ class NameServiceClient implements Runnable {
             }
         } catch(SocketTimeoutException ste) {
         } catch( Exception ex ) {
-            if( log.level > 2 )
-                ex.printStackTrace( log );
+            logger.info(ex.getMessage(), ex);
         } finally {
             tryClose();
         }
@@ -230,9 +233,9 @@ class NameServiceClient implements Runnable {
                         ensureOpen( timeout + 1000 );
                         socket.send( out );
 
-                        if( log.level > 3 ) {
-                            log.println( request );
-                            Hexdump.hexdump( log, snd_buf, 0, out.getLength() );
+                        if( logger.isDebugEnabled() ) {
+                            logger.debug( String.valueOf(request) );
+                            Hexdump.hexdumpDebug( logger, snd_buf, 0, out.getLength() );
                         }
                     }
 
@@ -294,8 +297,7 @@ class NameServiceClient implements Runnable {
             try {
                 send( request, response, RETRY_TIMEOUT );
             } catch( IOException ioe ) {
-                if( log.level > 1 )
-                    ioe.printStackTrace( log );
+                logger.warn(ioe.getMessage(), ioe);
                 throw new UnknownHostException( name.name );
             }
 
@@ -323,8 +325,7 @@ class NameServiceClient implements Runnable {
                 try {
                     send( request, response, RETRY_TIMEOUT );
                 } catch( IOException ioe ) {
-                    if( log.level > 1 )
-                        ioe.printStackTrace( log );
+                    logger.warn(ioe.getMessage(), ioe);
                     throw new UnknownHostException( name.name );
                 }
 
@@ -370,8 +371,7 @@ class NameServiceClient implements Runnable {
                             try {
                                 send( request, response, RETRY_TIMEOUT );
                             } catch( IOException ioe ) {
-                                if( log.level > 1 )
-                                    ioe.printStackTrace( log );
+                                logger.warn(ioe.getMessage(), ioe);
                                 throw new UnknownHostException( name.name );
                             }
                             if( response.received && response.resultCode == 0 ) {
@@ -412,8 +412,7 @@ class NameServiceClient implements Runnable {
             try {
                 send( request, response, RETRY_TIMEOUT );
             } catch( IOException ioe ) {
-                if( log.level > 1 )
-                    ioe.printStackTrace( log );
+                logger.warn(ioe.getMessage(), ioe);
                 throw new UnknownHostException( addr.toString() );
             }
             if( response.received && response.resultCode == 0 ) {

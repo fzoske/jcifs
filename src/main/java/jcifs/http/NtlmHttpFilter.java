@@ -22,19 +22,29 @@
 
 package jcifs.http;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.Enumeration;
-import java.net.UnknownHostException;
-import javax.servlet.*;
-import javax.servlet.http.*;
-import jcifs.*;
-import jcifs.smb.SmbSession;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import jcifs.Config;
+import jcifs.UniAddress;
 import jcifs.smb.NtlmChallenge;
 import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbAuthException;
+import jcifs.smb.SmbSession;
 import jcifs.util.Base64;
-import jcifs.util.LogStream;
-import jcifs.netbios.NbtAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This servlet Filter can be used to negotiate password hashes with
@@ -47,7 +57,7 @@ import jcifs.netbios.NbtAddress;
 
 public class NtlmHttpFilter implements Filter {
 
-    private static LogStream log = LogStream.getInstance();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private String defaultDomain;
     private String domainController;
@@ -92,15 +102,7 @@ public class NtlmHttpFilter implements Filter {
         realm = Config.getProperty("jcifs.http.basicRealm");
         if (realm == null) realm = "jCIFS";
 
-        if(( level = Config.getInt( "jcifs.util.loglevel", -1 )) != -1 ) {
-            LogStream.setLevel( level );
-        }
-        if( log.level > 2 ) {
-            try {
-                Config.store( log, "JCIFS PROPERTIES" );
-            } catch( IOException ioe ) {
-            }
-        }
+        logger.info("JCIFS PROPERTIES: " + Config.getPropertyString());
     }
 
     public void destroy() {
@@ -188,17 +190,14 @@ public class NtlmHttpFilter implements Filter {
 
                 SmbSession.logon( dc, ntlm );
 
-                if( log.level > 2 ) {
-                    log.println( "NtlmHttpFilter: " + ntlm +
+                logger.info( "NtlmHttpFilter: " + ntlm +
                             " successfully authenticated against " + dc );
-                }
+                
             } catch( SmbAuthException sae ) {
-                if( log.level > 1 ) {
-                    log.println( "NtlmHttpFilter: " + ntlm.getName() +
+                logger.error( "NtlmHttpFilter: " + ntlm.getName() +
                             ": 0x" + jcifs.util.Hexdump.toHexString( sae.getNtStatus(), 8 ) +
-                            ": " + sae );
-                }
-                if( sae.getNtStatus() == sae.NT_STATUS_ACCESS_VIOLATION ) {
+                            ": " + sae, sae );
+                if( sae.getNtStatus() == SmbAuthException.NT_STATUS_ACCESS_VIOLATION ) {
                     /* Server challenge no longer valid for
                      * externally supplied password hashes.
                      */

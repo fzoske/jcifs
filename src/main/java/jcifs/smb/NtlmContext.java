@@ -24,7 +24,9 @@ import jcifs.ntlmssp.Type2Message;
 import jcifs.ntlmssp.Type3Message;
 import jcifs.util.Encdec;
 import jcifs.util.Hexdump;
-import jcifs.util.LogStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
 For initiating NTLM authentication (including NTLMv2). If you want to add NTLMv2 authentication support to something this is what you want to use. See the code for details. Note that JCIFS does not implement the acceptor side of NTLM authentication.
@@ -41,7 +43,7 @@ public class NtlmContext {
     byte[] signingKey = null;
     String netbiosName = null;
     int state = 1;
-    LogStream log;
+    Logger logger;
 
     public NtlmContext(NtlmPasswordAuthentication auth, boolean doSigning) {
         this.auth = auth;
@@ -55,7 +57,7 @@ public class NtlmContext {
                 NtlmFlags.NTLMSSP_NEGOTIATE_KEY_EXCH;
         }
         this.workstation = Type1Message.getDefaultWorkstation();
-        log = LogStream.getInstance();
+        logger = LoggerFactory.getLogger(getClass());
     }
 
     public String toString() {
@@ -124,10 +126,9 @@ public class NtlmContext {
                 Type1Message msg1 = new Type1Message(ntlmsspFlags, auth.getDomain(), workstation);
                 token = msg1.toByteArray();
 
-                if (log.level >= 4) {
-                    log.println(msg1);
-                    if (log.level >= 6)
-                        Hexdump.hexdump(log, token, 0, token.length);
+                logger.info(String.valueOf(msg1));
+                if (logger.isDebugEnabled()) {
+                    Hexdump.hexdumpDebug(logger, token, 0, token.length);
                 }
 
                 state++;
@@ -136,10 +137,9 @@ public class NtlmContext {
                 try {
                     Type2Message msg2 = new Type2Message(token);
 
-                    if (log.level >= 4) {
-                        log.println(msg2);
-                        if (log.level >= 6)
-                            Hexdump.hexdump(log, token, 0, token.length);
+                    logger.info(String.valueOf(msg2));
+                    if (logger.isDebugEnabled()) {
+                        Hexdump.hexdumpDebug(logger, token, 0, token.length);
                     }
 
                     serverChallenge = msg2.getChallenge();
@@ -155,11 +155,7 @@ public class NtlmContext {
                                 ntlmsspFlags);
                     token = msg3.toByteArray();
 
-                    if (log.level >= 4) {
-                        log.println(msg3);
-                        if (log.level >= 6)
-                            Hexdump.hexdump(log, token, 0, token.length);
-                    }
+                    logToken(token, msg3);
 
                     if ((ntlmsspFlags & NtlmFlags.NTLMSSP_NEGOTIATE_SIGN) != 0)
                         signingKey = msg3.getMasterKey();
@@ -174,5 +170,12 @@ public class NtlmContext {
                 throw new SmbException("Invalid state");
         }
         return token;
+    }
+
+    private void logToken(byte[] token, Type3Message msg3) {
+        logger.info(String.valueOf(msg3));
+        if (logger.isDebugEnabled()) {
+            Hexdump.hexdumpDebug(logger, token, 0, token.length);
+        }
     }
 }

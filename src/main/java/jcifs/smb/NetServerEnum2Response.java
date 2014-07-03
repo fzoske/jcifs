@@ -19,12 +19,15 @@
 
 package jcifs.smb;
 
-import java.io.InputStream;
-import java.io.IOException;
 import jcifs.util.Hexdump;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class NetServerEnum2Response extends SmbComTransactionResponse {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    
     class ServerInfo1 implements FileEntry {
         String name;
         int versionMajor;
@@ -113,8 +116,7 @@ class NetServerEnum2Response extends SmbComTransactionResponse {
             off = start + off;
             e.commentOrMasterBrowser = readString( buffer, off, 48, false );
 
-            if( log.level >= 4 )
-                log.println( e );
+            logger.debug( String.valueOf(e) );
         }
         lastName = numEntries == 0 ? null : e.name;
 

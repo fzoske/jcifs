@@ -18,14 +18,16 @@
 
 package jcifs.smb;
 
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.net.MalformedURLException;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 
 import jcifs.util.transport.TransportException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This InputStream can read bytes from a file on an SMB file server. Offsets are 64 bits.
@@ -33,6 +35,7 @@ import jcifs.util.transport.TransportException;
 
 public class SmbFileInputStream extends InputStream {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private long fp;
     private int readSize, openFlags, access;
     private byte[] tmp = new byte[1];
@@ -157,8 +160,7 @@ public class SmbFileInputStream extends InputStream {
          * Read AndX Request / Response
          */
 
-        if( file.log.level >= 4 )
-            file.log.println( "read: fid=" + file.fid + ",off=" + off + ",len=" + len );
+        logger.debug( "read: fid=" + file.fid + ",off=" + off + ",len=" + len );
 
         SmbComReadAndXResponse response = new SmbComReadAndXResponse( b, off );
 
@@ -170,8 +172,7 @@ public class SmbFileInputStream extends InputStream {
         do {
             r = len > readSize ? readSize : len;
 
-            if( file.log.level >= 4 )
-                file.log.println( "read: len=" + len + ",r=" + r + ",fp=" + fp );
+            logger.debug( "read: len=" + len + ",r=" + r + ",fp=" + fp );
 
             try {
 SmbComReadAndX request = new SmbComReadAndX( file.fid, fp, r, null );

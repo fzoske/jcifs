@@ -18,18 +18,20 @@
 
 package jcifs.netbios;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.Hashtable;
-import java.net.UnknownHostException;
+
 import jcifs.Config;
 import jcifs.smb.SmbFileInputStream;
-import jcifs.util.LogStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Lmhosts {
 
@@ -37,7 +39,7 @@ public class Lmhosts {
     private static final Hashtable TAB = new Hashtable();
     private static long lastModified = 1L;
     private static int alt;
-    private static LogStream log = LogStream.getInstance();
+    private static final Logger logger = LoggerFactory.getLogger(Lmhosts.class);
 
     /**
      * This is really just for {@link jcifs.UniAddress}. It does
@@ -67,13 +69,9 @@ public class Lmhosts {
                 result = (NbtAddress)TAB.get( name );
             }
         } catch( FileNotFoundException fnfe ) {
-            if( log.level > 1 ) {
-                log.println( "lmhosts file: " + FILENAME );
-                fnfe.printStackTrace( log );
-            }
+            logger.error( "lmhosts file: " + FILENAME, fnfe );
         } catch( IOException ioe ) {
-            if( log.level > 0 )
-                ioe.printStackTrace( log );
+            logger.error(ioe.getMessage(), ioe);
         }
         return result;
     }
@@ -95,8 +93,7 @@ public class Lmhosts {
                         try {
                             populate( new InputStreamReader( new SmbFileInputStream( url )));
                         } catch( IOException ioe ) {
-                            log.println( "lmhosts URL: " + url );
-                            ioe.printStackTrace( log );
+                            logger.error( "lmhosts URL: " + url, ioe);
                             continue;
                         }
 

@@ -18,8 +18,12 @@
 
 package jcifs.smb;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 class TransCallNamedPipe extends SmbComTransaction {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private byte[] pipeData;
     private int pipeDataOff, pipeDataLen;
 
@@ -53,8 +57,7 @@ class TransCallNamedPipe extends SmbComTransaction {
     }
     int writeDataWireFormat( byte[] dst, int dstIndex ) {
         if(( dst.length - dstIndex ) < pipeDataLen ) {
-            if( log.level >= 3 )
-                log.println( "TransCallNamedPipe data too long for buffer" );
+            logger.info( "TransCallNamedPipe data too long for buffer" );
             return 0;
         }
         System.arraycopy( pipeData, pipeDataOff, dst, dstIndex, pipeDataLen );

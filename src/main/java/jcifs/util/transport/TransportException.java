@@ -6,6 +6,8 @@ import java.io.StringWriter;
 
 public class TransportException extends IOException {
 
+    private static final long serialVersionUID = 3743631204022885618L;
+
     private Throwable rootCause;
 
     public TransportException() {
