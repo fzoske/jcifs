@@ -18,19 +18,39 @@
 
 package jcifs.http;
 
-import java.io.*;
-import javax.servlet.*;
-import javax.servlet.http.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
-import java.net.UnknownHostException;
-import jcifs.*;
-import jcifs.http.*;
-import jcifs.smb.*;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.GregorianCalendar;
+import java.util.LinkedList;
+import java.util.ListIterator;
+
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import jcifs.Config;
+import jcifs.UniAddress;
 import jcifs.netbios.NbtAddress;
-import jcifs.util.MimeMap;
+import jcifs.smb.DfsReferral;
+import jcifs.smb.NtStatus;
+import jcifs.smb.NtlmPasswordAuthentication;
+import jcifs.smb.SmbAuthException;
+import jcifs.smb.SmbException;
+import jcifs.smb.SmbFile;
+import jcifs.smb.SmbFileInputStream;
+import jcifs.smb.SmbSession;
 import jcifs.util.Base64;
-import jcifs.util.LogStream;
+import jcifs.util.MimeMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This servlet may be used to "browse" the entire hierarchy of resources
@@ -41,7 +61,7 @@ import jcifs.util.LogStream;
 
 public class NetworkExplorer extends HttpServlet {
 
-    private static LogStream log = LogStream.getInstance();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private MimeMap mimeMap;
     private String style;
@@ -55,7 +75,7 @@ public class NetworkExplorer extends HttpServlet {
         InputStream is;
         StringBuffer sb = new StringBuffer();
         byte[] buf = new byte[1024];
-        int n, level;
+        int n;
         String name;
 
         Config.setProperty( "jcifs.smb.client.soTimeout", "600000" );
@@ -92,41 +112,37 @@ public class NetworkExplorer extends HttpServlet {
         if (realm == null) realm = "jCIFS";
         defaultDomain = Config.getProperty("jcifs.smb.client.domain");
 
-        if(( level = Config.getInt( "jcifs.util.loglevel", -1 )) != -1 ) {
-            LogStream.setLevel( level );
-        }
-        if( log.level > 2 ) {
-            try {
-                Config.store( log, "JCIFS PROPERTIES" );
-            } catch( IOException ioe ) {
-            }
-        }
+        logger.info("JCIFS PROPERTIES: " + Config.getPropertyString());
     }
 
     protected void doFile( HttpServletRequest req,
                 HttpServletResponse resp, SmbFile file ) throws IOException {
         byte[] buf = new byte[8192];
-        SmbFileInputStream in;
-        ServletOutputStream out;
+        SmbFileInputStream in = null;
+        ServletOutputStream out = null;
         String url, type;
         int n;
 
-        in = new SmbFileInputStream( file );
-        out = resp.getOutputStream();
-        url = file.getPath();
-
-        resp.setContentType( "text/plain" );
-
-        if(( n = url.lastIndexOf( '.' )) > 0 &&
-                ( type = url.substring( n + 1 )) != null &&
-                type.length() > 1 && type.length() < 6 ) {
-            resp.setContentType( mimeMap.getMimeType( type ));
-        }
-        resp.setHeader( "Content-Length", file.length() + "" );
-        resp.setHeader( "Accept-Ranges", "Bytes" );
-
-        while(( n = in.read( buf )) != -1 ) {
-            out.write( buf, 0, n );
+        try {
+            in = new SmbFileInputStream( file );
+            out = resp.getOutputStream();
+            url = file.getPath();
+    
+            resp.setContentType( "text/plain" );
+    
+            if(( n = url.lastIndexOf( '.' )) > 0 &&
+                    ( type = url.substring( n + 1 )) != null &&
+                    type.length() > 1 && type.length() < 6 ) {
+                resp.setContentType( mimeMap.getMimeType( type ));
+            }
+            resp.setHeader( "Content-Length", file.length() + "" );
+            resp.setHeader( "Accept-Ranges", "Bytes" );
+    
+            while(( n = in.read( buf )) != -1 ) {
+                out.write( buf, 0, n );
+            }
+        } finally {
+            if (in != null) in.close();
         }
     }
     protected int compareNames( SmbFile f1, String f1name, SmbFile f2 ) throws IOException {
@@ -187,17 +203,17 @@ public class NetworkExplorer extends HttpServlet {
         SmbFile f;
         int i, j, len, maxLen, dirCount, fileCount, sort;
         String str, name, path, fmt;
-        LinkedList sorted;
-        ListIterator iter;
+        LinkedList<SmbFile> sorted;
+        ListIterator<SmbFile> iter;
         SimpleDateFormat sdf = new SimpleDateFormat( "MM/d/yy h:mm a" );
         GregorianCalendar cal = new GregorianCalendar();
 
         sdf.setCalendar( cal );
 
         dirents = dir.listFiles();
-        if( log.level > 2 )
-            log.println( dirents.length + " items listed" );
-        sorted = new LinkedList();
+
+        logger.info( dirents.length + " items listed" );
+        sorted = new LinkedList<SmbFile>();
         if(( fmt = req.getParameter( "fmt" )) == null ) {
             fmt = "col";
         }
@@ -219,12 +235,10 @@ public class NetworkExplorer extends HttpServlet {
                     continue;
                 }
             } catch( SmbAuthException sae ) {
-                if( log.level > 2 )
-                    sae.printStackTrace( log );
+                logger.info("", sae );
             } catch( SmbException se ) {
-                if( log.level > 2 )
-                    se.printStackTrace( log );
-                if( se.getNtStatus() != se.NT_STATUS_UNSUCCESSFUL ) {
+                logger.info("", se );
+                if( se.getNtStatus() != NtStatus.NT_STATUS_UNSUCCESSFUL ) {
                     throw se;
                 }
             }
@@ -235,8 +249,7 @@ public class NetworkExplorer extends HttpServlet {
             }
 
             name = dirents[i].getName();
-            if( log.level > 3 )
-                log.println( i + ": " + name );
+            logger.debug( i + ": " + name );
             len = name.length(); 
             if( len > maxLen ) {
                 maxLen = len;
@@ -378,6 +391,7 @@ public class NetworkExplorer extends HttpServlet {
         out.println( "</BODY></HTML>" );
         out.close();
     }
+    
     private String parseServerAndShare( String pathInfo ) {
         char[] out = new char[256];
         char ch;
@@ -500,7 +514,7 @@ public class NetworkExplorer extends HttpServlet {
             if( ssn != null ) {
                 ssn.removeAttribute( "npa-" + server );
             }
-            if( sae.getNtStatus() == sae.NT_STATUS_ACCESS_VIOLATION ) {
+            if( sae.getNtStatus() == SmbAuthException.NT_STATUS_ACCESS_VIOLATION ) {
                 /* Server challenge no longer valid for
                  * externally supplied password hashes.
                  */

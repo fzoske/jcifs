@@ -1,9 +1,11 @@
 package jcifs.util.transport;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import jcifs.util.LogStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class simplifies communication for protocols that support
@@ -17,7 +19,7 @@ import jcifs.util.LogStream;
 public abstract class Transport implements Runnable {
 
     static int id = 0;
-    static LogStream log = LogStream.getInstance();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public static int readn( InputStream in,
                 byte[] b,
@@ -49,7 +51,7 @@ public abstract class Transport implements Runnable {
     Thread thread;
     TransportException te;
 
-    protected HashMap response_map = new HashMap( 4 );
+    protected HashMap<Request, Response> response_map = new HashMap<Request, Response>( 4 );
 
     protected abstract void makeKey( Request request ) throws IOException;
     protected abstract Request peekKey() throws IOException;
@@ -76,12 +78,11 @@ public abstract class Transport implements Runnable {
                     }
                 }
             } catch( IOException ioe ) {
-                if (log.level > 2)
-                    ioe.printStackTrace( log );
+                logger.debug("I/O exception", ioe);
                 try {
                     disconnect( true );
                 } catch( IOException ioe2 ) {
-                    ioe2.printStackTrace( log );
+                    logger.error("Error during disconnecting", ioe2);
                 }
                 throw ioe;
             } catch( InterruptedException ie ) {
@@ -99,8 +100,7 @@ public abstract class Transport implements Runnable {
                 synchronized (this) {
                     Response response = (Response)response_map.get( key );
                     if (response == null) {
-                        if (log.level >= 4)
-                            log.println( "Invalid key, skipping message" );
+                        logger.debug( "Invalid key, skipping message" );
                         doSkip();
                     } else {
                         doRecv( response );
@@ -115,13 +115,13 @@ public abstract class Transport implements Runnable {
                  */
                 boolean hard = timeout == false;
 
-                if (!timeout && log.level >= 3)
-                    ex.printStackTrace( log );
+                if (!timeout)
+                    logger.warn("Exception in transport loop", ex);;
 
                 try {
                     disconnect( hard );
                 } catch( IOException ioe ) {
-                    ioe.printStackTrace( log );
+                    logger.error("Error during disconnecting", ioe);
                 }
             }
         }
@@ -190,8 +190,7 @@ public abstract class Transport implements Runnable {
             /* This guarantees that we leave in a valid state
              */
             if (state != 0 && state != 3 && state != 4) {
-                if (log.level >= 1)
-                    log.println("Invalid state: " + state);
+                logger.error("Invalid state: " + state);
                 state = 0;
                 thread = null;
             }
@@ -219,8 +218,7 @@ public abstract class Transport implements Runnable {
                 state = 0;
                 break;
             default:
-                if (log.level >= 1)
-                    log.println("Invalid state: " + state);
+                logger.error("Invalid state: " + state);
                 thread = null;
                 state = 0;
                 break;
@@ -249,8 +247,7 @@ public abstract class Transport implements Runnable {
                      * doConnect returned too late, just ignore.
                      */
                     if (ex0 != null) {
-                        if (log.level >= 2)
-                            ex0.printStackTrace(log);
+                        logger.warn("", ex0);
                     }
                     return;
                 }

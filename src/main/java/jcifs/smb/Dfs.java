@@ -21,6 +21,9 @@ package jcifs.smb;
 import java.util.*;
 import java.io.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import jcifs.UniAddress;
 import jcifs.util.*;
 import jcifs.Config;
@@ -39,7 +42,7 @@ public class Dfs {
         }
     }
 
-    static LogStream log = LogStream.getInstance();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     static final boolean strictView = Config.getBoolean("jcifs.smb.client.dfs.strictView", false);
     static final long TTL = Config.getLong("jcifs.smb.client.dfs.ttl", 300);
     static final boolean DISABLED = Config.getBoolean("jcifs.smb.client.dfs.disabled", false);
@@ -76,8 +79,7 @@ public class Dfs {
                 return _domains.map;
             }
         } catch (IOException ioe) {
-            if (log.level >= 3)
-                ioe.printStackTrace(log);
+            logger.warn("Can't get trusted domains", ioe);
             if (strictView && ioe instanceof SmbAuthException) {
                 throw (SmbAuthException)ioe;
             }
@@ -120,8 +122,7 @@ public class Dfs {
                 throw e;
             }
         } catch (IOException ioe) {
-            if (log.level >= 3)
-                ioe.printStackTrace(log);
+            logger.warn("", ioe);
             if (strictView && ioe instanceof SmbAuthException) {
                 throw (SmbAuthException)ioe;
             }
@@ -144,8 +145,7 @@ public class Dfs {
             if (dr != null)
                 return dr;
         } catch (IOException ioe) {
-            if (log.level >= 4)
-                ioe.printStackTrace(log);
+            logger.debug("Can't get referral", ioe);
             if (strictView && ioe instanceof SmbAuthException) {
                 throw (SmbAuthException)ioe;
             }

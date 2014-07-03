@@ -18,13 +18,16 @@
 
 package jcifs;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.io.IOException;
 import java.util.StringTokenizer;
-import jcifs.netbios.NbtAddress;
+
 import jcifs.netbios.Lmhosts;
-import jcifs.util.LogStream;
+import jcifs.netbios.NbtAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Under normal conditions it is not necessary to use
@@ -55,7 +58,7 @@ public class UniAddress {
     private static int[] resolveOrder;
     private static InetAddress baddr;
 
-    private static LogStream log = LogStream.getInstance();
+    private static final Logger logger = LoggerFactory.getLogger(UniAddress.class);
 
     static {
         String ro = Config.getProperty( "jcifs.resolveOrder" );
@@ -97,10 +100,8 @@ public class UniAddress {
                     tmp[i++] = RESOLVER_LMHOSTS;
                 } else if( s.equalsIgnoreCase( "WINS" )) {
                     if( nbns == null ) {
-                        if( log.level > 1 ) {
-                            log.println( "UniAddress resolveOrder specifies WINS however the " +
+                        logger.warn( "UniAddress resolveOrder specifies WINS however the " +
                                     "jcifs.netbios.wins property has not been set" );
-                        }
                         continue;
                     }
                     tmp[i++] = RESOLVER_WINS;
@@ -108,8 +109,8 @@ public class UniAddress {
                     tmp[i++] = RESOLVER_BCAST;
                 } else if( s.equalsIgnoreCase( "DNS" )) {
                     tmp[i++] = RESOLVER_DNS;
-                } else if( log.level > 1 ) {
-                    log.println( "unknown resolver method: " + s );
+                } else {
+                    logger.warn( "unknown resolver method: " + s );
                 }
             }
             resolveOrder = new int[i];

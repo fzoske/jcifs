@@ -21,10 +21,15 @@ package jcifs.smb;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 class Trans2FindFirst2Response extends SmbComTransactionResponse {
 
     // information levels
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    
     static final int SMB_INFO_STANDARD                 = 1;
     static final int SMB_INFO_QUERY_EA_SIZE            = 2;
     static final int SMB_INFO_QUERY_EAS_FROM_LIST      = 3;
@@ -126,8 +131,7 @@ class Trans2FindFirst2Response extends SmbComTransactionResponse {
                 str = new String( src, srcIndex, len, ServerMessageBlock.OEM_ENCODING );
             }
         } catch( UnsupportedEncodingException uee ) {
-            if( log.level > 1 )
-                uee.printStackTrace( log );
+            logger.error(uee.getMessage(), uee);
         }
         return str;
     }

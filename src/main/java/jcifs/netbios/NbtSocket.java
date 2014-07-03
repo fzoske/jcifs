@@ -18,13 +18,16 @@
 
 package jcifs.netbios;
 
-import java.net.Socket;
-import java.net.InetAddress;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+
 import jcifs.Config;
-import jcifs.util.LogStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
 Do not use this class. Writing to the OutputStream of this type of socket
@@ -38,7 +41,7 @@ public class NbtSocket extends Socket {
     private static final int BUFFER_SIZE = 512;
     private static final int DEFAULT_SO_TIMEOUT = 5000;
 
-    private static LogStream log = LogStream.getInstance();
+    private final Logger logger = LoggerFactory.getLogger(NbtSocket.class);
 
     private NbtAddress address;
     private Name calledName;
@@ -112,8 +115,7 @@ public class NbtSocket extends Socket {
 
         switch( type ) {
             case SessionServicePacket.POSITIVE_SESSION_RESPONSE:
-                if( log.level > 2 )
-                    log.println( "session established ok with " + address );
+                logger.info( "session established ok with " + address );
                 return;
             case SessionServicePacket.NEGATIVE_SESSION_RESPONSE:
                 int errorCode = (int)( in.read() & 0xFF );
@@ -127,8 +129,7 @@ public class NbtSocket extends Socket {
         }
     }
     public void close() throws IOException {
-        if( log.level > 3 )
-            log.println( "close: " + this );
+        logger.debug( "close: " + this );
         super.close();
     }
 }

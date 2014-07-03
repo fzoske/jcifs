@@ -18,12 +18,13 @@
 
 package jcifs.smb;
 
-import java.io.InputStream;
-import java.io.IOException;
-import jcifs.util.Hexdump;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class NetShareEnumResponse extends SmbComTransactionResponse {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    
     private int converter, totalAvailableEntries;
 
     NetShareEnumResponse() {
@@ -74,8 +75,7 @@ class NetShareEnumResponse extends SmbComTransactionResponse {
             off = start + off;
             e.remark = readString( buffer, off, 128, false );
 
-            if (log.level >= 4)
-                log.println( e );
+            logger.debug( String.valueOf(e) );
         }
 
         return bufferIndex - start;

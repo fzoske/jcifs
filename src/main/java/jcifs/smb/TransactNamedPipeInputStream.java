@@ -18,25 +18,27 @@
 
 package jcifs.smb;
 
-import java.io.InputStream;
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class TransactNamedPipeInputStream extends SmbFileInputStream {
 
     private static final int INIT_PIPE_SIZE = 4096;
-
+    
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    
     private byte[] pipe_buf = new byte[INIT_PIPE_SIZE];
     private int beg_idx, nxt_idx, used;
-    private boolean dcePipe;
 
     Object lock;
 
     TransactNamedPipeInputStream( SmbNamedPipe pipe ) throws SmbException,
                 MalformedURLException, UnknownHostException {
         super( pipe, ( pipe.pipeType & 0xFFFF00FF ) | SmbFile.O_EXCL );
-        this.dcePipe = ( pipe.pipeType & SmbNamedPipe.PIPE_TYPE_DCE_TRANSACT ) != SmbNamedPipe.PIPE_TYPE_DCE_TRANSACT;
         lock = new Object();
     }
     public int read() throws IOException {
@@ -89,8 +91,7 @@ class TransactNamedPipeInputStream extends SmbFileInputStream {
         return result;
     }
     public int available() throws IOException {
-        if( file.log.level >= 3 )
-            file.log.println( "Named Pipe available() does not apply to TRANSACT Named Pipes" );
+        logger.info( "Named Pipe available() does not apply to TRANSACT Named Pipes" );
         return 0;
     }
     int receive( byte[] b, int off, int len ) {

@@ -2,10 +2,11 @@ package jcifs.smb;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.io.IOException;
-import jcifs.Config;
-import jcifs.util.LogStream;
+
 import jcifs.util.Hexdump;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * To filter 0 len updates and for debugging
@@ -13,7 +14,7 @@ import jcifs.util.Hexdump;
 
 public class SigningDigest implements SmbConstants {
 
-    static LogStream log = LogStream.getInstance();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private MessageDigest digest;
     private byte[] macSigningKey;
@@ -25,8 +26,7 @@ public class SigningDigest implements SmbConstants {
         try {
             digest = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException ex) {
-            if( log.level > 0 )
-                ex.printStackTrace( log );
+            logger.error(ex.getMessage(), ex);
             throw new SmbException( "MD5", ex );
         }
 
@@ -35,19 +35,17 @@ public class SigningDigest implements SmbConstants {
         this.updates = 0;
         this.signSequence = 0;
 
-        if( log.level >= 5 ) {
-            log.println("macSigningKey:");
-            Hexdump.hexdump( log, macSigningKey, 0, macSigningKey.length );
+        if(logger.isDebugEnabled()) {
+            logger.debug("macSigningKey:");
+            Hexdump.hexdumpDebug( logger, macSigningKey, 0, macSigningKey.length );
         }
     }
 
-    public SigningDigest( SmbTransport transport,
-                NtlmPasswordAuthentication auth ) throws SmbException {
+    public SigningDigest( SmbTransport transport, NtlmPasswordAuthentication auth ) throws SmbException {
         try {
             digest = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException ex) {
-            if( log.level > 0 )
-                ex.printStackTrace( log );
+            logger.error(ex.getMessage(), ex);
             throw new SmbException( "MD5", ex );
         }
 
@@ -77,17 +75,16 @@ public class SigningDigest implements SmbConstants {
         } catch( Exception ex ) {
             throw new SmbException( "", ex );
         }
-        if( log.level >= 5 ) {
-            log.println( "LM_COMPATIBILITY=" + LM_COMPATIBILITY );
-            Hexdump.hexdump( log, macSigningKey, 0, macSigningKey.length );
+        if(logger.isDebugEnabled()) {
+            logger.debug( "LM_COMPATIBILITY=" + LM_COMPATIBILITY );
+            Hexdump.hexdumpDebug( logger, macSigningKey, 0, macSigningKey.length );
         }
     }
 
     public void update( byte[] input, int offset, int len ) {
-        if( log.level >= 5 ) {
-            log.println( "update: " + updates + " " + offset + ":" + len );
-            Hexdump.hexdump( log, input, offset, Math.min( len, 256 ));
-            log.flush();
+        if( logger.isDebugEnabled() ) {
+            System.out.println( "update: " + updates + " " + offset + ":" + len );
+            Hexdump.hexdump( System.out, input, offset, Math.min( len, 256 ));
         }
         if( len == 0 ) {
             return; /* CRITICAL */
@@ -100,10 +97,9 @@ public class SigningDigest implements SmbConstants {
 
         b = digest.digest();
 
-        if( log.level >= 5 ) {
-            log.println( "digest: " );
-            Hexdump.hexdump( log, b, 0, b.length );
-            log.flush();
+        if( logger.isDebugEnabled() ) {
+            System.out.println( "digest: " );
+            Hexdump.hexdump( System.out, b, 0, b.length );
         }
         updates = 0;
 
@@ -140,8 +136,7 @@ public class SigningDigest implements SmbConstants {
                 System.arraycopy("BSRSPYL ".getBytes(), 0, data, index, 8);
             }
         } catch (Exception ex) {
-            if( log.level > 0 )
-                ex.printStackTrace( log );
+            logger.error(ex.getMessage(), ex);
         } finally {
             signSequence += 2;
         }
@@ -177,11 +172,10 @@ public class SigningDigest implements SmbConstants {
         byte[] signature = digest();
         for (int i = 0; i < 8; i++) {
             if (signature[i] != data[offset + ServerMessageBlock.SIGNATURE_OFFSET + i]) {
-                if( log.level >= 2 ) {
-                    log.println( "signature verification failure" );
-                    Hexdump.hexdump( log, signature, 0, 8 );
-                    Hexdump.hexdump( log, data,
-                        offset + ServerMessageBlock.SIGNATURE_OFFSET, 8 );
+                if( logger.isWarnEnabled() ) {
+                    logger.warn( "signature verification failure" );
+                    Hexdump.hexdumpWarn( logger, signature, 0, 8 );
+                    Hexdump.hexdumpWarn( logger, data, offset + ServerMessageBlock.SIGNATURE_OFFSET, 8 );
                 }
                 return response.verifyFailed = true;
             }

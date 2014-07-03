@@ -31,8 +31,10 @@ import jcifs.Config;
 import jcifs.util.DES;
 import jcifs.util.Encdec;
 import jcifs.util.HMACT64;
-import jcifs.util.LogStream;
 import jcifs.util.MD4;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class stores and encrypts NTLM user credentials. The default
@@ -46,12 +48,13 @@ import jcifs.util.MD4;
 
 public final class NtlmPasswordAuthentication implements Principal, Serializable {
 
-    private static final int LM_COMPATIBILITY =
-            Config.getInt("jcifs.smb.lmCompatibility", 3);
+    private static final long serialVersionUID = 7972905964105275479L;
+
+    private static final int LM_COMPATIBILITY = Config.getInt("jcifs.smb.lmCompatibility", 3);
 
     private static final Random RANDOM = new Random();
 
-    private static LogStream log = LogStream.getInstance();
+    private static final Logger logger = LoggerFactory.getLogger(NtlmPasswordAuthentication.class);
 
     // KGS!@#$%
     private static final byte[] S8 = {
@@ -143,8 +146,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
             System.arraycopy(clientChallenge, 0, response, 16, 8);
             return response;
         } catch (Exception ex) {
-            if( log.level > 0 )
-                ex.printStackTrace( log );
+            logger.error(ex.getMessage(), ex);
             return null;
         }
     }
@@ -161,8 +163,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
             md5.update(clientChallenge, 0, 8);
             System.arraycopy(md5.digest(), 0, sessionHash, 0, 8);
         } catch (GeneralSecurityException gse) {
-            if (log.level > 0)
-                gse.printStackTrace(log);
+            logger.error(gse.getMessage(), gse);
             throw new RuntimeException("MD5", gse);
         }
 
@@ -483,8 +484,7 @@ public final class NtlmPasswordAuthentication implements Principal, Serializable
         try {
             getUserSessionKey(challenge, key, 0); 
         } catch (Exception ex) {
-            if( log.level > 0 )
-                ex.printStackTrace( log );
+            logger.error(ex.getMessage(), ex);
         }
         return key; 
     }

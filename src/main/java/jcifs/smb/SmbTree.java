@@ -18,14 +18,13 @@
 
 package jcifs.smb;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
-import jcifs.UniAddress;
-import jcifs.netbios.NbtAddress;
-import jcifs.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class SmbTree {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    
     private static int tree_conn_counter;
 
     /* 0 - not connected
@@ -166,8 +165,7 @@ synchronized (session.transport()) {
              * Tree Connect And X Request / Response
              */
     
-            if( session.transport.log.level >= 4 )
-                session.transport.log.println( "treeConnect: unc=" + unc + ",service=" + service );
+            logger.debug( "treeConnect: unc=" + unc + ",service=" + service );
     
             SmbComTreeConnectAndXResponse response =
                     new SmbComTreeConnectAndXResponse( andxResponse );
@@ -199,9 +197,7 @@ synchronized (session.transport()) {
             try {
                 send( new SmbComTreeDisconnect(), null );
             } catch( SmbException se ) {
-                if (session.transport.log.level > 1) {
-                    se.printStackTrace( session.transport.log );
-                }
+                logger.error(se.getMessage(), se);
             }
         }
         inDfs = false;

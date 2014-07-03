@@ -19,8 +19,11 @@
 
 package jcifs.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+
+import org.slf4j.Logger;
 
 /**
  */
@@ -54,6 +57,30 @@ public class Hexdump {
  * </blockquote></pre>
  */
 
+    public static void hexdumpError( Logger logger, byte[] src, int srcIndex, int length ) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        hexdump(new PrintStream(baos), src, srcIndex, length);
+        logger.error(baos.toString());
+    }
+    
+    public static void hexdumpInfo( Logger logger, byte[] src, int srcIndex, int length ) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        hexdump(new PrintStream(baos), src, srcIndex, length);
+        logger.info(baos.toString());
+    }
+    
+    public static void hexdumpWarn( Logger logger, byte[] src, int srcIndex, int length ) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        hexdump(new PrintStream(baos), src, srcIndex, length);
+        logger.warn(baos.toString());
+    }
+    
+    public static void hexdumpDebug( Logger logger, byte[] src, int srcIndex, int length ) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        hexdump(new PrintStream(baos), src, srcIndex, length);
+        logger.debug(baos.toString());
+    }
+    
     public static void hexdump( PrintStream ps, byte[] src, int srcIndex, int length ) {
         if( length == 0 ) {
             return;
