@@ -51,8 +51,6 @@ import org.slf4j.LoggerFactory;
 
 public class Config {
 
-    public static int socketCount = 0;
-
     /**
      * The static <code>Properties</code>.
      */
@@ -63,7 +61,6 @@ public class Config {
 
     static {
         String filename;
-        int level;
         FileInputStream in = null;
 
         logger = LoggerFactory.getLogger(Config.class);
@@ -106,13 +103,7 @@ public class Config {
      */
 
     public static void registerSmbURLHandler() {
-        String ver, pkgs;
-
-        ver = System.getProperty( "java.version" );
-        if( ver.startsWith( "1.1." ) || ver.startsWith( "1.2." )) {
-             throw new RuntimeException( "jcifs-0.7.0b4+ requires Java 1.3 or above. You are running " + ver );
-        }
-        pkgs = System.getProperty( "java.protocol.handler.pkgs" );
+        String pkgs = System.getProperty( "java.protocol.handler.pkgs" );
         if( pkgs == null ) {
             System.setProperty( "java.protocol.handler.pkgs", "jcifs" );
         } else if( pkgs.indexOf( "jcifs" ) == -1 ) {
@@ -211,7 +202,7 @@ public class Config {
             try {
                 def = Integer.parseInt( s );
             } catch( NumberFormatException nfe ) {
-                logger.error("", nfe);
+                logger.error(nfe.getMessage(), nfe);
             }
         }
         return def;
@@ -228,7 +219,7 @@ public class Config {
             try {
                 result = Integer.parseInt( s );
             } catch( NumberFormatException nfe ) {
-                logger.error("", nfe);
+                logger.error(nfe.getMessage(), nfe);
             }
         }
         return result;
@@ -246,7 +237,7 @@ public class Config {
             try {
                 def = Long.parseLong( s );
             } catch( NumberFormatException nfe ) {
-                logger.error("", nfe);
+                logger.error(nfe.getMessage(), nfe);
             }
         }
         return def;

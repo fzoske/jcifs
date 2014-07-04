@@ -36,8 +36,7 @@ public class SigningDigest implements SmbConstants {
         this.signSequence = 0;
 
         if(logger.isDebugEnabled()) {
-            logger.debug("macSigningKey:");
-            Hexdump.hexdumpDebug( logger, macSigningKey, 0, macSigningKey.length );
+            Hexdump.hexdumpDebug( logger, "macSigningKey:", macSigningKey, 0, macSigningKey.length );
         }
     }
 
@@ -76,15 +75,14 @@ public class SigningDigest implements SmbConstants {
             throw new SmbException( "", ex );
         }
         if(logger.isDebugEnabled()) {
-            logger.debug( "LM_COMPATIBILITY=" + LM_COMPATIBILITY );
-            Hexdump.hexdumpDebug( logger, macSigningKey, 0, macSigningKey.length );
+            Hexdump.hexdumpDebug( logger, "LM_COMPATIBILITY=" + LM_COMPATIBILITY, macSigningKey, 0, macSigningKey.length );
         }
     }
 
     public void update( byte[] input, int offset, int len ) {
         if( logger.isDebugEnabled() ) {
-            System.out.println( "update: " + updates + " " + offset + ":" + len );
-            Hexdump.hexdump( System.out, input, offset, Math.min( len, 256 ));
+            String caption = "update: " + updates + " " + offset + ":" + len;
+            Hexdump.hexdumpDebug( logger, caption,  input, offset, Math.min( len, 256 ));
         }
         if( len == 0 ) {
             return; /* CRITICAL */
@@ -98,8 +96,7 @@ public class SigningDigest implements SmbConstants {
         b = digest.digest();
 
         if( logger.isDebugEnabled() ) {
-            System.out.println( "digest: " );
-            Hexdump.hexdump( System.out, b, 0, b.length );
+            Hexdump.hexdumpDebug( logger, "digest: ", b, 0, b.length );
         }
         updates = 0;
 
@@ -173,9 +170,9 @@ public class SigningDigest implements SmbConstants {
         for (int i = 0; i < 8; i++) {
             if (signature[i] != data[offset + ServerMessageBlock.SIGNATURE_OFFSET + i]) {
                 if( logger.isWarnEnabled() ) {
-                    logger.warn( "signature verification failure" );
-                    Hexdump.hexdumpWarn( logger, signature, 0, 8 );
-                    Hexdump.hexdumpWarn( logger, data, offset + ServerMessageBlock.SIGNATURE_OFFSET, 8 );
+                	StringBuilder log = new StringBuilder();
+                	Hexdump.hexdumpString( log, "signature verification failure", signature, 0, 8 );
+                    Hexdump.hexdumpWarn( logger, log.toString(), data, offset + ServerMessageBlock.SIGNATURE_OFFSET, 8 );
                 }
                 return response.verifyFailed = true;
             }
