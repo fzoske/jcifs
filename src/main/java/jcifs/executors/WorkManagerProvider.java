@@ -49,7 +49,7 @@ public class WorkManagerProvider {
         }
         
         private static ExecutorService makeService() {
-            String className = Config.getProperty("executors.executorServiceClass", DefaultExecutorFactory.class.getName());
+            String className = Config.getProperty("jcifs.executors.executorServiceClass", DefaultExecutorFactory.class.getName());
             ExecutorFactory factory = null;
             try {
                 Class<?> clazz = Class.forName(className);

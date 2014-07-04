@@ -11,7 +11,7 @@ public class DefaultExecutorFactory implements ExecutorFactory {
 
     @Override
     public ExecutorService make() {
-        int maxThreadCount = Config.getInt("jcifs.executors.threads.count", Runtime.getRuntime().availableProcessors());
+        int maxThreadCount = Config.getInt("jcifs.executors.threads.count", 100);
         int coreThreadCount = Config.getInt("jcifs.executors.threads.core.count", 0);
         long keepAliveTime = Config.getLong("jcifs.executors.threads.keepAliveTimeMillis", TimeUnit.SECONDS.toMillis(60));
         return new ThreadPoolExecutor(coreThreadCount, maxThreadCount,
