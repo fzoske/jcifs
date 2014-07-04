@@ -26,10 +26,10 @@ import jcifs.dcerpc.msrpc.*;
 
 public class DcerpcBinding {
 
-    private static HashMap INTERFACES;
+    private static HashMap<String, String> INTERFACES;
 
     static {
-        INTERFACES = new HashMap();
+        INTERFACES = new HashMap<String, String>();
         INTERFACES.put("srvsvc", srvsvc.getSyntax());
         INTERFACES.put("lsarpc", lsarpc.getSyntax());
         INTERFACES.put("samr", samr.getSyntax());
@@ -44,7 +44,7 @@ public class DcerpcBinding {
     String proto;
     String server;
     String endpoint = null;
-    HashMap options = null;
+    HashMap<String, Object> options = null;
     UUID uuid = null;
     int major;
     int minor;
@@ -72,7 +72,7 @@ public class DcerpcBinding {
             throw new DcerpcException("Bad endpoint: " + endpoint);
         }
         if (options == null)
-            options = new HashMap();
+            options = new HashMap<String, Object>();
         options.put(key, val);
     }
     Object getOption(String key) {
@@ -86,7 +86,7 @@ public class DcerpcBinding {
     public String toString() {
         String ret = proto + ":" + server + "[" + endpoint;
         if (options != null) {
-            Iterator iter = options.keySet().iterator();
+            Iterator<String> iter = options.keySet().iterator();
             while (iter.hasNext()) {
                 Object key = iter.next();
                 Object val = options.get(key);

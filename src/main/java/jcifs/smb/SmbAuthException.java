@@ -26,6 +26,7 @@ package jcifs.smb;
  */
 
 public class SmbAuthException extends SmbException {
+    private static final long serialVersionUID = 8771057985971076790L;
 
     SmbAuthException( int errcode ) {
         super( errcode, null );

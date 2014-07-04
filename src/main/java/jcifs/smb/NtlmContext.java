@@ -34,7 +34,6 @@ For initiating NTLM authentication (including NTLMv2). If you want to add NTLMv2
 
 public class NtlmContext {
 
-
     NtlmPasswordAuthentication auth;
     int ntlmsspFlags;
     String workstation;
@@ -128,7 +127,7 @@ public class NtlmContext {
 
                 logger.info(String.valueOf(msg1));
                 if (logger.isDebugEnabled()) {
-                    Hexdump.hexdumpDebug(logger, token, 0, token.length);
+                    Hexdump.hexdumpDebug(logger, "", token, 0, token.length);
                 }
 
                 state++;
@@ -137,9 +136,10 @@ public class NtlmContext {
                 try {
                     Type2Message msg2 = new Type2Message(token);
 
-                    logger.info(String.valueOf(msg2));
                     if (logger.isDebugEnabled()) {
-                        Hexdump.hexdumpDebug(logger, token, 0, token.length);
+                        Hexdump.hexdumpDebug(logger, String.valueOf(msg2), token, 0, token.length);
+                    } else {
+                        logger.info(String.valueOf(msg2));
                     }
 
                     serverChallenge = msg2.getChallenge();
@@ -173,9 +173,10 @@ public class NtlmContext {
     }
 
     private void logToken(byte[] token, Type3Message msg3) {
-        logger.info(String.valueOf(msg3));
         if (logger.isDebugEnabled()) {
-            Hexdump.hexdumpDebug(logger, token, 0, token.length);
+            Hexdump.hexdumpDebug(logger, String.valueOf(msg3), token, 0, token.length);
+        } else {
+        	logger.info(String.valueOf(msg3));
         }
     }
 }

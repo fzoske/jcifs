@@ -70,7 +70,7 @@ public final class SmbSession {
         if( DOMAIN == null ) {
             throw new SmbException( "A domain was not specified" );
         }
-synchronized (DOMAIN) {
+        synchronized (DOMAIN) {
             long now = System.currentTimeMillis();
             int retry = 1;
 
@@ -106,7 +106,7 @@ synchronized (DOMAIN) {
             } while (retry-- > 0);
 
             dc_list_expiration = now + 1000 * 60 * 15; /* 15 min */
-}
+        }
 
         throw new UnknownHostException(
                 "Failed to negotiate with a suitable domain controller for " + DOMAIN );
@@ -208,259 +208,258 @@ synchronized (DOMAIN) {
     }
     void send( ServerMessageBlock request,
                             ServerMessageBlock response ) throws SmbException {
-synchronized (transport()) {
-        if( response != null ) {
-            response.received = false;
-        }
-
-        expiration = System.currentTimeMillis() + SmbTransport.SO_TIMEOUT;
-        sessionSetup( request, response );
-        if( response != null && response.received ) {
-            return;
-        }
-
-        if (request instanceof SmbComTreeConnectAndX) {
-            SmbComTreeConnectAndX tcax = (SmbComTreeConnectAndX)request;
-            if (netbiosName != null && tcax.path.endsWith("\\IPC$")) {
-                /* Some pipes may require that the hostname in the tree connect
-                 * be the netbios name. So if we have the netbios server name
-                 * from the NTLMSSP type 2 message, and the share is IPC$, we
-                 * assert that the tree connect path uses the netbios hostname.
-                 */
-                tcax.path = "\\\\" + netbiosName + "\\IPC$";
+        synchronized (transport()) {
+            if( response != null ) {
+                response.received = false;
             }
-        }
-
-        request.uid = uid;
-        request.auth = auth;
-        try {
-            transport.send( request, response );
-        } catch (SmbException se) {
+    
+            expiration = System.currentTimeMillis() + SmbTransport.SO_TIMEOUT;
+            sessionSetup( request, response );
+            if( response != null && response.received ) {
+                return;
+            }
+    
             if (request instanceof SmbComTreeConnectAndX) {
-                logoff(true);
+                SmbComTreeConnectAndX tcax = (SmbComTreeConnectAndX)request;
+                if (netbiosName != null && tcax.path.endsWith("\\IPC$")) {
+                    /* Some pipes may require that the hostname in the tree connect
+                     * be the netbios name. So if we have the netbios server name
+                     * from the NTLMSSP type 2 message, and the share is IPC$, we
+                     * assert that the tree connect path uses the netbios hostname.
+                     */
+                    tcax.path = "\\\\" + netbiosName + "\\IPC$";
+                }
             }
-            request.digest = null;
-            throw se;
+    
+            request.uid = uid;
+            request.auth = auth;
+            try {
+                transport.send( request, response );
+            } catch (SmbException se) {
+                if (request instanceof SmbComTreeConnectAndX) {
+                    logoff(true);
+                }
+                request.digest = null;
+                throw se;
+            }
         }
-}
     }
     void sessionSetup( ServerMessageBlock andx,
                 ServerMessageBlock andxResponse ) throws SmbException {
-synchronized (transport()) {
-        NtlmContext nctx = null;
-        SmbException ex = null;
-        SmbComSessionSetupAndX request;
-        SmbComSessionSetupAndXResponse response;
-        byte[] token = new byte[0];
-        int state = 10;
-
-        while (connectionState != 0) {
-            if (connectionState == 2 || connectionState == 3) // connected or disconnecting
-                return;
-            try {
-                transport.wait();
-            } catch (InterruptedException ie) {
-                throw new SmbException(ie.getMessage(), ie);
+        synchronized (transport()) {
+            NtlmContext nctx = null;
+            SmbException ex = null;
+            SmbComSessionSetupAndX request;
+            SmbComSessionSetupAndXResponse response;
+            byte[] token = new byte[0];
+            int state = 10;
+    
+            while (connectionState != 0) {
+                if (connectionState == 2 || connectionState == 3) // connected or disconnecting
+                    return;
+                try {
+                    transport.wait();
+                } catch (InterruptedException ie) {
+                    throw new SmbException(ie.getMessage(), ie);
+                }
             }
-        }
-        connectionState = 1; // trying ...
-
-        try {
-            transport.connect();
-
-            /*
-             * Session Setup And X Request / Response
-             */
+            connectionState = 1; // trying ...
     
-            logger.debug( "sessionSetup: accountName=" + auth.username + ",primaryDomain=" + auth.domain );
+            try {
+                transport.connect();
     
-            /* We explicitly set uid to 0 here to prevent a new
-             * SMB_COM_SESSION_SETUP_ANDX from having it's uid set to an
-             * old value when the session is re-established. Otherwise a
-             * "The parameter is incorrect" error can occur.
-             */
-            uid = 0;
-    
-            do {
-                switch (state) {
-                    case 10: /* NTLM */
-                        if (auth != NtlmPasswordAuthentication.ANONYMOUS &&
-                                transport.hasCapability(SmbConstants.CAP_EXTENDED_SECURITY)) {
-                            state = 20; /* NTLMSSP */
-                            break;
-                        }
-    
-                        request = new SmbComSessionSetupAndX( this, andx, auth );
-                        response = new SmbComSessionSetupAndXResponse( andxResponse );
-    
-                        /* Create SMB signature digest if necessary
-                         * Only the first SMB_COM_SESSION_SETUP_ANX with non-null or
-                         * blank password initializes signing.
-                         */
-                        if (transport.isSignatureSetupRequired( auth )) {
-                            if( auth.hashesExternal && NtlmPasswordAuthentication.DEFAULT_PASSWORD != NtlmPasswordAuthentication.BLANK ) {
-                                /* preauthentication
-                                 */
-                                transport.getSmbSession( NtlmPasswordAuthentication.DEFAULT ).getSmbTree( LOGON_SHARE, null ).treeConnect( null, null );
-                            } else {
-                                byte[] signingKey = auth.getSigningKey(transport.server.encryptionKey);
-                                request.digest = new SigningDigest(signingKey, false);
+                /*
+                 * Session Setup And X Request / Response
+                 */
+        
+                logger.debug( "sessionSetup: accountName=" + auth.username + ",primaryDomain=" + auth.domain );
+        
+                /* We explicitly set uid to 0 here to prevent a new
+                 * SMB_COM_SESSION_SETUP_ANDX from having it's uid set to an
+                 * old value when the session is re-established. Otherwise a
+                 * "The parameter is incorrect" error can occur.
+                 */
+                uid = 0;
+        
+                do {
+                    switch (state) {
+                        case 10: /* NTLM */
+                            if (auth != NtlmPasswordAuthentication.ANONYMOUS &&
+                                    transport.hasCapability(SmbConstants.CAP_EXTENDED_SECURITY)) {
+                                state = 20; /* NTLMSSP */
+                                break;
                             }
-                        }
-    
-                        request.auth = auth;
-    
-                        try {
-                            transport.send( request, response );
-                        } catch (SmbAuthException sae) {
-                            throw sae;
-                        } catch (SmbException se) {
-                            ex = se;
-                        }
-    
-                        if( response.isLoggedInAsGuest &&
-                                    "GUEST".equalsIgnoreCase( auth.username ) == false &&
-                                    transport.server.security != SmbConstants.SECURITY_SHARE &&
-                                    auth != NtlmPasswordAuthentication.ANONYMOUS) {
-                            throw new SmbAuthException( NtStatus.NT_STATUS_LOGON_FAILURE );
-                        }
-    
-                        if (ex != null)
-                            throw ex;
-    
-                        uid = response.uid;
-    
-                        if( request.digest != null ) {
-                            /* success - install the signing digest */
-                            transport.digest = request.digest;
-                        }
-    
-                        connectionState = 2;    
-
-                        state = 0;
-    
-                        break;
-                    case 20:
-                        if (nctx == null) {
-                            boolean doSigning = (transport.flags2 & ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES) != 0;
-                            nctx = new NtlmContext(auth, doSigning);
-                        }
-    
-                        logger.debug( String.valueOf(nctx) );
-    
-                        if (nctx.isEstablished()) {
-
-                            netbiosName = nctx.getNetbiosName();
-
-                            connectionState = 2;
-
-                            state = 0;
-                            break;
-                        }
-    
-                        try {
-                            token = nctx.initSecContext(token, 0, token.length);
-                        } catch (SmbException se) {
-                            /* We must close the transport or the server will be expecting a
-                             * Type3Message. Otherwise, when we send a Type1Message it will return
-                             * "Invalid parameter".
+        
+                            request = new SmbComSessionSetupAndX( this, andx, auth );
+                            response = new SmbComSessionSetupAndXResponse( andxResponse );
+        
+                            /* Create SMB signature digest if necessary
+                             * Only the first SMB_COM_SESSION_SETUP_ANX with non-null or
+                             * blank password initializes signing.
                              */
-                            try { transport.disconnect(true); } catch (IOException ioe) {}
-                            uid = 0;
-                            throw se;
-                        }
-    
-                        if (token != null) {
-                            request = new SmbComSessionSetupAndX(this, null, token);
-                            response = new SmbComSessionSetupAndXResponse(null);
-    
                             if (transport.isSignatureSetupRequired( auth )) {
-                                byte[] signingKey = nctx.getSigningKey();
-                                if (signingKey != null)
-                                    request.digest = new SigningDigest(signingKey, true);
+                                if( auth.hashesExternal && NtlmPasswordAuthentication.DEFAULT_PASSWORD != NtlmPasswordAuthentication.BLANK ) {
+                                    /* preauthentication
+                                     */
+                                    transport.getSmbSession( NtlmPasswordAuthentication.DEFAULT ).getSmbTree( LOGON_SHARE, null ).treeConnect( null, null );
+                                } else {
+                                    byte[] signingKey = auth.getSigningKey(transport.server.encryptionKey);
+                                    request.digest = new SigningDigest(signingKey, false);
+                                }
                             }
-    
-                            request.uid = uid;
-                            uid = 0;
-    
+        
+                            request.auth = auth;
+        
                             try {
                                 transport.send( request, response );
                             } catch (SmbAuthException sae) {
                                 throw sae;
                             } catch (SmbException se) {
                                 ex = se;
-                                /* Apparently once a successfull NTLMSSP login occurs, the
-                                 * server will return "Access denied" even if a logoff is
-                                 * sent. Unfortunately calling disconnect() doesn't always
-                                 * actually shutdown the connection before other threads
-                                 * have committed themselves (e.g. InterruptTest example).
-                                 */
-                                try { transport.disconnect(true); } catch (Exception e) {}
                             }
-    
+        
                             if( response.isLoggedInAsGuest &&
-                                        "GUEST".equalsIgnoreCase( auth.username ) == false) {
+                                        "GUEST".equalsIgnoreCase( auth.username ) == false &&
+                                        transport.server.security != SmbConstants.SECURITY_SHARE &&
+                                        auth != NtlmPasswordAuthentication.ANONYMOUS) {
                                 throw new SmbAuthException( NtStatus.NT_STATUS_LOGON_FAILURE );
                             }
-    
+        
                             if (ex != null)
                                 throw ex;
-    
+        
                             uid = response.uid;
-    
-                            if (request.digest != null) {
+        
+                            if( request.digest != null ) {
                                 /* success - install the signing digest */
                                 transport.digest = request.digest;
                             }
+        
+                            connectionState = 2;    
     
-                            token = response.blob;
-                        }
+                            state = 0;
+        
+                            break;
+                        case 20:
+                            if (nctx == null) {
+                                boolean doSigning = (transport.flags2 & ServerMessageBlock.FLAGS2_SECURITY_SIGNATURES) != 0;
+                                nctx = new NtlmContext(auth, doSigning);
+                            }
+        
+                            logger.debug( String.valueOf(nctx) );
+        
+                            if (nctx.isEstablished()) {
     
-                        break;
-                    default:
-                        throw new SmbException("Unexpected session setup state: " + state);
-                }
-            } while (state != 0);
-        } catch (SmbException se) {
-            logoff(true);
-            connectionState = 0;
-            throw se;
-        } finally {
-            transport.notifyAll();
+                                netbiosName = nctx.getNetbiosName();
+    
+                                connectionState = 2;
+    
+                                state = 0;
+                                break;
+                            }
+        
+                            try {
+                                token = nctx.initSecContext(token, 0, token.length);
+                            } catch (SmbException se) {
+                                /* We must close the transport or the server will be expecting a
+                                 * Type3Message. Otherwise, when we send a Type1Message it will return
+                                 * "Invalid parameter".
+                                 */
+                                try { transport.disconnect(true); } catch (IOException ioe) {}
+                                uid = 0;
+                                throw se;
+                            }
+        
+                            if (token != null) {
+                                request = new SmbComSessionSetupAndX(this, null, token);
+                                response = new SmbComSessionSetupAndXResponse(null);
+        
+                                if (transport.isSignatureSetupRequired( auth )) {
+                                    byte[] signingKey = nctx.getSigningKey();
+                                    if (signingKey != null)
+                                        request.digest = new SigningDigest(signingKey, true);
+                                }
+        
+                                request.uid = uid;
+                                uid = 0;
+        
+                                try {
+                                    transport.send( request, response );
+                                } catch (SmbAuthException sae) {
+                                    throw sae;
+                                } catch (SmbException se) {
+                                    ex = se;
+                                    /* Apparently once a successfull NTLMSSP login occurs, the
+                                     * server will return "Access denied" even if a logoff is
+                                     * sent. Unfortunately calling disconnect() doesn't always
+                                     * actually shutdown the connection before other threads
+                                     * have committed themselves (e.g. InterruptTest example).
+                                     */
+                                    try { transport.disconnect(true); } catch (Exception e) {}
+                                }
+        
+                                if( response.isLoggedInAsGuest &&
+                                            "GUEST".equalsIgnoreCase( auth.username ) == false) {
+                                    throw new SmbAuthException( NtStatus.NT_STATUS_LOGON_FAILURE );
+                                }
+        
+                                if (ex != null)
+                                    throw ex;
+        
+                                uid = response.uid;
+        
+                                if (request.digest != null) {
+                                    /* success - install the signing digest */
+                                    transport.digest = request.digest;
+                                }
+        
+                                token = response.blob;
+                            }
+        
+                            break;
+                        default:
+                            throw new SmbException("Unexpected session setup state: " + state);
+                    }
+                } while (state != 0);
+            } catch (SmbException se) {
+                logoff(true);
+                connectionState = 0;
+                throw se;
+            } finally {
+                transport.notifyAll();
+            }
         }
-}
     }
     void logoff( boolean inError ) {
-synchronized (transport()) {
-
-        if (connectionState != 2) // not-connected
-            return;
-        connectionState = 3; // disconnecting
-
-        netbiosName = null;
-
-        for( Enumeration e = trees.elements(); e.hasMoreElements(); ) {
-            SmbTree t = (SmbTree)e.nextElement();
-            t.treeDisconnect( inError );
-        }
-
-        if( !inError && transport.server.security != ServerMessageBlock.SECURITY_SHARE ) {
-            /*
-             * Logoff And X Request / Response
-             */
-
-            SmbComLogoffAndX request = new SmbComLogoffAndX( null );
-            request.uid = uid;
-            try {
-                transport.send( request, null );
-            } catch( SmbException se ) {
+        synchronized (transport()) {
+            if (connectionState != 2) // not-connected
+                return;
+            connectionState = 3; // disconnecting
+    
+            netbiosName = null;
+    
+            for( Enumeration e = trees.elements(); e.hasMoreElements(); ) {
+                SmbTree t = (SmbTree)e.nextElement();
+                t.treeDisconnect( inError );
             }
-            uid = 0;
+    
+            if( !inError && transport.server.security != ServerMessageBlock.SECURITY_SHARE ) {
+                /*
+                 * Logoff And X Request / Response
+                 */
+    
+                SmbComLogoffAndX request = new SmbComLogoffAndX( null );
+                request.uid = uid;
+                try {
+                    transport.send( request, null );
+                } catch( SmbException se ) {
+                }
+                uid = 0;
+            }
+    
+            connectionState = 0;
+            transport.notifyAll();
         }
-
-        connectionState = 0;
-        transport.notifyAll();
-}
     }
     public String toString() {
         return "SmbSession[accountName=" + auth.username +

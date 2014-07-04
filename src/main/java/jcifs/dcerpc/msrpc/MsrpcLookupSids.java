@@ -19,9 +19,7 @@
 
 package jcifs.dcerpc.msrpc;
 
-import jcifs.smb.*;
-import jcifs.util.Hexdump;
-import jcifs.dcerpc.*;
+import jcifs.smb.SID;
 
 public class MsrpcLookupSids extends lsarpc.LsarLookupSids {
 

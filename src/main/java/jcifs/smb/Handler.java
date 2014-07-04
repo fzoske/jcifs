@@ -18,12 +18,10 @@
 
 package jcifs.smb;
 
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.io.PrintStream;
 
 public class Handler extends URLStreamHandler {
 

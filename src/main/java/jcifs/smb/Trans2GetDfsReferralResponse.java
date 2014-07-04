@@ -18,7 +18,6 @@
 
 package jcifs.smb;
 
-import java.util.Date;
 
 class Trans2GetDfsReferralResponse extends SmbComTransactionResponse {
 
@@ -41,9 +40,9 @@ class Trans2GetDfsReferralResponse extends SmbComTransactionResponse {
             int start = bufferIndex;
 
             version = readInt2( buffer, bufferIndex );
-if( version != 3 && version != 1 ) {
-    throw new RuntimeException( "Version " + version + " referral not supported. Please report this to jcifs at samba dot org." );
-}
+            if( version != 3 && version != 1 ) {
+                throw new RuntimeException( "Version " + version + " referral not supported. Please report this to jcifs at samba dot org." );
+            }
             bufferIndex += 2;
             size = readInt2( buffer, bufferIndex );
             bufferIndex += 2;

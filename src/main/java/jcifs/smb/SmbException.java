@@ -38,6 +38,7 @@ import jcifs.util.Hexdump;
  */
 
 public class SmbException extends IOException implements NtStatus, DosError, WinError {
+    private static final long serialVersionUID = 484863569441792249L;
 
     static String getMessageByCode( int errcode ) {
         /* Note there's a signedness error here because 0xC0000000 based values are

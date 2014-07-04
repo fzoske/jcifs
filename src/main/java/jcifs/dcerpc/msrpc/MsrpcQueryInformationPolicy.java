@@ -18,9 +18,7 @@
 
 package jcifs.dcerpc.msrpc;
 
-import jcifs.smb.*;
-import jcifs.dcerpc.*;
-import jcifs.dcerpc.ndr.*;
+import jcifs.dcerpc.ndr.NdrObject;
 
 public class MsrpcQueryInformationPolicy extends lsarpc.LsarQueryInformationPolicy {
 

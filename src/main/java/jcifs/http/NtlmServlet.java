@@ -20,30 +20,22 @@
 package jcifs.http;
 
 import java.io.IOException;
-
-import java.net.UnknownHostException;
-
 import java.util.Enumeration;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.UnavailableException;
-
-import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import jcifs.Config;
 import jcifs.UniAddress;
-
+import jcifs.netbios.NbtAddress;
 import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbAuthException;
 import jcifs.smb.SmbSession;
-
 import jcifs.util.Base64;
-
-import jcifs.netbios.NbtAddress;
 
 /**
  * This servlet may be used with pre-2.3 servlet containers

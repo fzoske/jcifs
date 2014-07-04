@@ -290,8 +290,7 @@ public class SmbTransport extends Transport implements SmbConstants {
             Encdec.enc_uint32be( n & 0xFFFF, sbuf, 0 ); /* 4 byte ssn msg header */
 
             if (logger.isDebugEnabled()) {
-                logger.debug( String.valueOf(NEGOTIATE_REQUEST) );
-                Hexdump.hexdumpDebug( logger, sbuf, 4, n );
+                Hexdump.hexdumpDebug( logger, String.valueOf(NEGOTIATE_REQUEST), sbuf, 4, n );
             }
 
             out.write( sbuf, 0, 4 + n );
@@ -309,8 +308,7 @@ public class SmbTransport extends Transport implements SmbConstants {
             resp.decode( sbuf, 4 );
 
             if (logger.isDebugEnabled()) {
-                logger.debug( String.valueOf(resp) );
-                Hexdump.hexdumpDebug( logger, sbuf, 4, n );
+                Hexdump.hexdumpDebug( logger, String.valueOf(resp), sbuf, 4, n );
             }
         }
     }
@@ -404,8 +402,7 @@ public class SmbTransport extends Transport implements SmbConstants {
         if ((n = readn( in, sbuf, 4, 32 )) < 32)
             return null;
         if (logger.isDebugEnabled()) {
-            logger.debug( "New data read: " + this );
-            Hexdump.hexdumpDebug( logger, sbuf, 4, 32 );
+            Hexdump.hexdumpDebug( logger, "New data read: " + this, sbuf, 4, 32 );
         }
 
         for ( ;; ) {
@@ -451,11 +448,13 @@ public class SmbTransport extends Transport implements SmbConstants {
             int n = smb.encode( BUF, 4 );
             Encdec.enc_uint32be( n & 0xFFFF, BUF, 0 ); /* 4 byte session message header */
             if (logger.isDebugEnabled()) {
+                StringBuilder log = new StringBuilder();
                 do {
-                    logger.debug( String.valueOf(smb) );
+                    log.append( String.valueOf(smb) );
+                    log.append('\n');
                 } while (smb instanceof AndXServerMessageBlock &&
                         (smb = ((AndXServerMessageBlock)smb).andx) != null);
-                Hexdump.hexdumpDebug( logger, BUF, 4, n );
+                Hexdump.hexdumpDebug( logger, log.toString(), BUF, 4, n );
             }
             /* For some reason this can sometimes get broken up into another
              * "NBSS Continuation Message" frame according to WireShark
@@ -521,8 +520,7 @@ public class SmbTransport extends Transport implements SmbConstants {
             }
 
             if (logger.isDebugEnabled()) {
-                logger.debug( String.valueOf(response) );
-                Hexdump.hexdumpDebug( logger, BUF, 4, size );
+                Hexdump.hexdumpDebug( logger, String.valueOf(response), BUF, 4, size );
             }
         }
     }

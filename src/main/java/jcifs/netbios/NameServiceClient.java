@@ -63,7 +63,7 @@ class NameServiceClient implements Runnable {
     private byte[] snd_buf, rcv_buf;
     private DatagramSocket socket;
     private DatagramPacket in, out;
-    private HashMap responseTable = new HashMap();
+    private HashMap<Integer, NameServicePacket> responseTable = new HashMap<Integer, NameServicePacket>();
     private Thread thread;
     private int nextNameTrnId = 0;
     private int[] resolveOrder;
@@ -196,8 +196,7 @@ class NameServiceClient implements Runnable {
                     response.received = true;
 
                     if( logger.isDebugEnabled() ) {
-                        logger.debug( String.valueOf(response) );
-                        Hexdump.hexdumpDebug( logger, rcv_buf, 0, in.getLength() );
+                        Hexdump.hexdumpDebug( logger, String.valueOf(response), rcv_buf, 0, in.getLength() );
                     }
 
                     response.notify();
@@ -234,8 +233,7 @@ class NameServiceClient implements Runnable {
                         socket.send( out );
 
                         if( logger.isDebugEnabled() ) {
-                            logger.debug( String.valueOf(request) );
-                            Hexdump.hexdumpDebug( logger, snd_buf, 0, out.getLength() );
+                            Hexdump.hexdumpDebug( logger, String.valueOf(request), snd_buf, 0, out.getLength() );
                         }
                     }
 

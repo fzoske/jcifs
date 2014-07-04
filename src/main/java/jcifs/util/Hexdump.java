@@ -20,7 +20,6 @@
 package jcifs.util;
 
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 
 import org.slf4j.Logger;
@@ -57,28 +56,40 @@ public class Hexdump {
  * </blockquote></pre>
  */
 
-    public static void hexdumpError( Logger logger, byte[] src, int srcIndex, int length ) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        hexdump(new PrintStream(baos), src, srcIndex, length);
-        logger.error(baos.toString());
+    public static void hexdumpError( Logger logger, String caption, byte[] src, int srcIndex, int length ) {
+        if (logger.isErrorEnabled()) {
+            StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
+            logger.error(builder.toString());
+        }
     }
     
-    public static void hexdumpInfo( Logger logger, byte[] src, int srcIndex, int length ) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        hexdump(new PrintStream(baos), src, srcIndex, length);
-        logger.info(baos.toString());
+    public static void hexdumpInfo( Logger logger, String caption, byte[] src, int srcIndex, int length ) {
+        if (logger.isInfoEnabled()) {
+            StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
+            logger.info(builder.toString());
+        }
     }
     
-    public static void hexdumpWarn( Logger logger, byte[] src, int srcIndex, int length ) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        hexdump(new PrintStream(baos), src, srcIndex, length);
-        logger.warn(baos.toString());
+    public static void hexdumpWarn( Logger logger, String caption, byte[] src, int srcIndex, int length ) {
+        if (logger.isWarnEnabled()) {
+            StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
+            logger.warn(builder.toString());
+        }
     }
     
-    public static void hexdumpDebug( Logger logger, byte[] src, int srcIndex, int length ) {
+    public static void hexdumpDebug( Logger logger, String caption, byte[] src, int srcIndex, int length ) {
+        if (logger.isDebugEnabled()) {
+            StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
+            logger.debug(builder.toString());
+        }
+    }
+    
+    public static StringBuilder hexdumpString( StringBuilder builder, String caption, byte[] src, int srcIndex, int length ) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        hexdump(new PrintStream(baos), src, srcIndex, length);
-        logger.debug(baos.toString());
+        PrintStream ps = new PrintStream(baos);
+        if (caption != null && !"".equals(caption)) ps.println(caption);
+        hexdump(ps, src, srcIndex, length);
+        return builder.append(baos.toString());
     }
     
     public static void hexdump( PrintStream ps, byte[] src, int srcIndex, int length ) {

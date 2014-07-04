@@ -242,7 +242,7 @@ abstract class ServerMessageBlock extends Response implements Request, SmbConsta
                                             src[srcIndex + len + 1] != (byte)0x00 ) {
                     len += 2;
                     if( len > maxLen ) {
-                        Hexdump.hexdump( System.err, src, srcIndex, maxLen < 128 ? maxLen + 8 : 128 );
+                        Hexdump.hexdumpError( logger, "zero termination not found", src, srcIndex, maxLen < 128 ? maxLen + 8 : 128 );
                         throw new RuntimeException( "zero termination not found" );
                     }
                 }
@@ -251,7 +251,7 @@ abstract class ServerMessageBlock extends Response implements Request, SmbConsta
                 while( src[srcIndex + len] != (byte)0x00 ) {
                     len++;
                     if( len > maxLen ) {
-                        Hexdump.hexdump( System.err, src, srcIndex, maxLen < 128 ? maxLen + 8 : 128 );
+                        Hexdump.hexdumpError( logger, "zero termination not found", src, srcIndex, maxLen < 128 ? maxLen + 8 : 128 );
                         throw new RuntimeException( "zero termination not found" );
                     }
                 }
@@ -276,7 +276,7 @@ abstract class ServerMessageBlock extends Response implements Request, SmbConsta
                         break;
                     }
                     if (len > maxLen) {
-                        Hexdump.hexdump(System.err, src, srcIndex, maxLen < 128 ? maxLen + 8 : 128);
+                        Hexdump.hexdumpError( logger, "zero termination not found", src, srcIndex, maxLen < 128 ? maxLen + 8 : 128);
                         throw new RuntimeException("zero termination not found");
                     }
                 }
@@ -287,7 +287,7 @@ abstract class ServerMessageBlock extends Response implements Request, SmbConsta
                         break;
                     }
                     if (len > maxLen) {
-                        Hexdump.hexdump(System.err, src, srcIndex, maxLen < 128 ? maxLen + 8 : 128);
+                        Hexdump.hexdumpError( logger, "zero termination not found", src, srcIndex, maxLen < 128 ? maxLen + 8 : 128);
                         throw new RuntimeException("zero termination not found");
                     }
                 }

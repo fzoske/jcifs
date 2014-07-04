@@ -49,7 +49,7 @@ public class SecurityDescriptor {
 
         bufferIndex++; // revision
         bufferIndex++;
-        int size = ServerMessageBlock.readInt2(buffer, bufferIndex);
+        ServerMessageBlock.readInt2(buffer, bufferIndex);
         bufferIndex += 2;
         int numAces = ServerMessageBlock.readInt4(buffer, bufferIndex);
         bufferIndex += 4;

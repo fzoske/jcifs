@@ -18,7 +18,6 @@
 
 package jcifs.smb;
 
-import java.io.UnsupportedEncodingException;
 
 class Trans2QueryFSInformationResponse extends SmbComTransactionResponse {
 

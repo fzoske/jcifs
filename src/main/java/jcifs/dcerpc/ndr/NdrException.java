@@ -22,7 +22,8 @@ package jcifs.dcerpc.ndr;
 import java.io.IOException;
 
 public class NdrException extends IOException {
-
+    private static final long serialVersionUID = 7621650016319792189L;
+    
     public static final String NO_NULL_REF = "ref pointer cannot be null";
     public static final String INVALID_CONFORMANCE = "invalid array conformance";
 

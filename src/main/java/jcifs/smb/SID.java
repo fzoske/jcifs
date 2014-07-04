@@ -155,26 +155,26 @@ synchronized (sid_cache) {
         ArrayList list = new ArrayList(sids.length);
         int si;
 
-synchronized (sid_cache) {
-        for (si = 0; si < length; si++) {
-            SID sid = (SID)sid_cache.get(sids[offset + si]);
-            if (sid != null) {
-                sids[offset + si].type = sid.type;
-                sids[offset + si].domainName = sid.domainName;
-                sids[offset + si].acctName = sid.acctName;
-            } else {
-                list.add(sids[offset + si]);
+        synchronized (sid_cache) {
+            for (si = 0; si < length; si++) {
+                SID sid = (SID)sid_cache.get(sids[offset + si]);
+                if (sid != null) {
+                    sids[offset + si].type = sid.type;
+                    sids[offset + si].domainName = sid.domainName;
+                    sids[offset + si].acctName = sid.acctName;
+                } else {
+                    list.add(sids[offset + si]);
+                }
+            }
+    
+            if (list.size() > 0) {
+                sids = (SID[])list.toArray(new SID[0]);
+                SID.resolveSids0(authorityServerName, auth, sids);
+                for (si = 0; si < sids.length; si++) {
+                    sid_cache.put(sids[si], sids[si]);
+                }
             }
         }
-
-        if (list.size() > 0) {
-            sids = (SID[])list.toArray(new SID[0]);
-            SID.resolveSids0(authorityServerName, auth, sids);
-            for (si = 0; si < sids.length; si++) {
-                sid_cache.put(sids[si], sids[si]);
-            }
-        }
-}
     }
     /**
      * Resolve an array of SIDs using a cache and at most one MSRPC request.
@@ -194,26 +194,26 @@ synchronized (sid_cache) {
         ArrayList list = new ArrayList(sids.length);
         int si;
 
-synchronized (sid_cache) {
-        for (si = 0; si < sids.length; si++) {
-            SID sid = (SID)sid_cache.get(sids[si]);
-            if (sid != null) {
-                sids[si].type = sid.type;
-                sids[si].domainName = sid.domainName;
-                sids[si].acctName = sid.acctName;
-            } else {
-                list.add(sids[si]);
-            }
-        }
-
-        if (list.size() > 0) {
-            sids = (SID[])list.toArray(new SID[0]);
-            SID.resolveSids0(authorityServerName, auth, sids);
+        synchronized (sid_cache) {
             for (si = 0; si < sids.length; si++) {
-                sid_cache.put(sids[si], sids[si]);
+                SID sid = (SID)sid_cache.get(sids[si]);
+                if (sid != null) {
+                    sids[si].type = sid.type;
+                    sids[si].domainName = sid.domainName;
+                    sids[si].acctName = sid.acctName;
+                } else {
+                    list.add(sids[si]);
+                }
+            }
+    
+            if (list.size() > 0) {
+                sids = (SID[])list.toArray(new SID[0]);
+                SID.resolveSids0(authorityServerName, auth, sids);
+                for (si = 0; si < sids.length; si++) {
+                    sid_cache.put(sids[si], sids[si]);
+                }
             }
         }
-}
     }
     public static SID getServerSid(String server,
                     NtlmPasswordAuthentication auth) throws IOException {
@@ -222,33 +222,33 @@ synchronized (sid_cache) {
         lsarpc.LsarDomainInfo info = new lsarpc.LsarDomainInfo();
         MsrpcQueryInformationPolicy rpc;
 
-synchronized (sid_cache) {
-        try {
-            handle = DcerpcHandle.getHandle("ncacn_np:" + server +
-                    "[\\PIPE\\lsarpc]", auth);
-            // NetApp doesn't like the 'generic' access mask values
-            policyHandle = new LsaPolicyHandle(handle, null, 0x00000001);
-            rpc = new MsrpcQueryInformationPolicy(policyHandle,
-                        (short)lsarpc.POLICY_INFO_ACCOUNT_DOMAIN,
-                        info);
-            handle.sendrecv(rpc);
-            if (rpc.retval != 0)
-                throw new SmbException(rpc.retval, false);
-
-            return new SID(info.sid,
-                        SID.SID_TYPE_DOMAIN,
-                        (new UnicodeString(info.name, false)).toString(),
-                        null,
-                        false);
-        } finally {
-            if (handle != null) {
-                if (policyHandle != null) {
-                    policyHandle.close();
+        synchronized (sid_cache) {
+            try {
+                handle = DcerpcHandle.getHandle("ncacn_np:" + server +
+                        "[\\PIPE\\lsarpc]", auth);
+                // NetApp doesn't like the 'generic' access mask values
+                policyHandle = new LsaPolicyHandle(handle, null, 0x00000001);
+                rpc = new MsrpcQueryInformationPolicy(policyHandle,
+                            (short)lsarpc.POLICY_INFO_ACCOUNT_DOMAIN,
+                            info);
+                handle.sendrecv(rpc);
+                if (rpc.retval != 0)
+                    throw new SmbException(rpc.retval, false);
+    
+                return new SID(info.sid,
+                            SID.SID_TYPE_DOMAIN,
+                            (new UnicodeString(info.name, false)).toString(),
+                            null,
+                            false);
+            } finally {
+                if (handle != null) {
+                    if (policyHandle != null) {
+                        policyHandle.close();
+                    }
+                    handle.close();
                 }
-                handle.close();
             }
         }
-}
     }
     public static byte[] toByteArray(rpc.sid_t sid) {
         byte[] dst = new byte[1 + 1 + 6 + sid.sub_authority_count * 4];
@@ -613,29 +613,29 @@ synchronized (sid_cache) {
         SamrDomainHandle domainHandle = null;
         SID domsid = getDomainSid();
 
-synchronized (sid_cache) {
-        try {
-            handle = DcerpcHandle.getHandle("ncacn_np:" + authorityServerName +
-                    "[\\PIPE\\samr]", auth);
-            policyHandle = new SamrPolicyHandle(handle, authorityServerName, 0x00000030);
-            domainHandle = new SamrDomainHandle(handle, policyHandle, 0x00000200, domsid);
-            return SID.getGroupMemberSids0(handle,
-                        domainHandle,
-                        domsid,
-                        getRid(),
-                        flags);
-        } finally {
-            if (handle != null) {
-                if (policyHandle != null) {
-                    if (domainHandle != null) {
-                        domainHandle.close();
+        synchronized (sid_cache) {
+            try {
+                handle = DcerpcHandle.getHandle("ncacn_np:" + authorityServerName +
+                        "[\\PIPE\\samr]", auth);
+                policyHandle = new SamrPolicyHandle(handle, authorityServerName, 0x00000030);
+                domainHandle = new SamrDomainHandle(handle, policyHandle, 0x00000200, domsid);
+                return SID.getGroupMemberSids0(handle,
+                            domainHandle,
+                            domsid,
+                            getRid(),
+                            flags);
+            } finally {
+                if (handle != null) {
+                    if (policyHandle != null) {
+                        if (domainHandle != null) {
+                            domainHandle.close();
+                        }
+                        policyHandle.close();
                     }
-                    policyHandle.close();
+                    handle.close();
                 }
-                handle.close();
             }
         }
-}
     }
 
     /**

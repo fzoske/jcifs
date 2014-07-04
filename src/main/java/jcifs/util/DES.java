@@ -60,7 +60,8 @@
 
 package jcifs.util;
 
-import java.io.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This code is derived from the above source
@@ -72,6 +73,7 @@ import java.io.*;
 
 public class DES   {
 
+    private static final Logger logger = LoggerFactory.getLogger(DES.class);
 
     private int[] encryptKeys = new int[32];
     private int[] decryptKeys = new int[32];
@@ -304,7 +306,7 @@ public class DES   {
         int length = clearText.length;
 
         if (length % 8 != 0) {
-            System.out.println("Array must be a multiple of 8");
+            logger.error("Array must be a multiple of 8");
             return null;
         }
 
@@ -325,7 +327,7 @@ public class DES   {
         int length = cipherText.length;
 
         if (length % 8 != 0) {
-            System.out.println("Array must be a multiple of 8");
+            logger.error("Array must be a multiple of 8");
             return null;
         }
 

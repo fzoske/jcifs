@@ -26,7 +26,6 @@ class SocketInputStream extends InputStream {
     private static final int TMP_BUFFER_SIZE = 256;
 
     private InputStream in;
-    private SessionServicePacket ssp;
     private int tot, bip, n;
     private byte[] header, tmp;
 

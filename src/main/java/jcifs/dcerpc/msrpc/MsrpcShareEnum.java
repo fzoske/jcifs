@@ -19,8 +19,8 @@
 
 package jcifs.dcerpc.msrpc;
 
-import jcifs.smb.*;
-import jcifs.util.Hexdump;
+import jcifs.smb.FileEntry;
+import jcifs.smb.SmbShareInfo;
 
 public class MsrpcShareEnum extends srvsvc.ShareEnumAll {
 

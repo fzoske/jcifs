@@ -44,7 +44,7 @@ public class Handler extends URLStreamHandler {
      */
     public static final int DEFAULT_HTTP_PORT = 80;
 
-    private static final Map PROTOCOL_HANDLERS = new HashMap();
+    private static final Map<String, URLStreamHandler> PROTOCOL_HANDLERS = new HashMap<String, URLStreamHandler>();
 
     private static final String HANDLER_PKGS_PROPERTY =
             "java.protocol.handler.pkgs";
@@ -74,8 +74,7 @@ public class Handler extends URLStreamHandler {
             URLStreamHandlerFactory factory) {
         synchronized (PROTOCOL_HANDLERS) {
             if (Handler.factory != null) {
-                throw new IllegalStateException(
-                        "URLStreamHandlerFactory already set.");
+                throw new IllegalStateException("URLStreamHandlerFactory already set.");
             }
             PROTOCOL_HANDLERS.clear();
             Handler.factory = factory;
@@ -115,7 +114,7 @@ public class Handler extends URLStreamHandler {
                     if (provider.equals("jcifs")) continue;
                     String className = provider + "." + protocol + ".Handler";
                     try {
-                        Class handlerClass = null;
+                        Class<?> handlerClass = null;
                         try {
                             handlerClass = Class.forName(className);
                         } catch (Exception ex) { }
@@ -133,7 +132,7 @@ public class Handler extends URLStreamHandler {
                     String className = JVM_VENDOR_DEFAULT_PKGS[i] + "." +
                             protocol + ".Handler";
                     try {
-                        Class handlerClass = null;
+                        Class<?> handlerClass = null;
                         try {
                             handlerClass = Class.forName(className);
                         } catch (Exception ex) { }
