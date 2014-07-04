@@ -18,8 +18,6 @@
 
 package jcifs.smb;
 
-import java.io.InputStream;
-import java.io.IOException;
 import jcifs.util.Hexdump;
 
 abstract class AndXServerMessageBlock extends ServerMessageBlock {
@@ -223,8 +221,7 @@ abstract class AndXServerMessageBlock extends ServerMessageBlock {
         byteCount = readInt2( buffer, bufferIndex ); bufferIndex += 2;
 
         if (byteCount != 0) {
-            int n;
-            n = readBytesWireFormat( buffer, bufferIndex );
+            readBytesWireFormat( buffer, bufferIndex );
             bufferIndex += byteCount;
         }
 

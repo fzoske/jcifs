@@ -18,7 +18,6 @@
 
 package jcifs.smb;
 
-import jcifs.Config;
 
 class SmbComWrite extends ServerMessageBlock {
 

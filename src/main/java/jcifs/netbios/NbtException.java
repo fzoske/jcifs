@@ -22,6 +22,8 @@ import java.io.IOException;
 
 public class NbtException extends IOException {
 
+    private static final long serialVersionUID = 492638554095148960L;
+    
     // error classes
     public static final int SUCCESS = 0;
     public static final int ERR_NAM_SRVC = 0x01;

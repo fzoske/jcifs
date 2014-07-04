@@ -68,7 +68,6 @@ public class NtlmHttpFilter implements Filter {
 
     public void init( FilterConfig filterConfig ) throws ServletException {
         String name;
-        int level;
 
         /* Set jcifs properties we know we want; soTimeout and cachePolicy to 30min.
          */

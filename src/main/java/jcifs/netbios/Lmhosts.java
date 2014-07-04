@@ -25,7 +25,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import jcifs.Config;
 import jcifs.smb.SmbFileInputStream;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class Lmhosts {
 
     private static final String FILENAME = Config.getProperty( "jcifs.netbios.lmhosts" );
-    private static final Hashtable TAB = new Hashtable();
+    private static final ConcurrentHashMap<Name, NbtAddress> TAB = new ConcurrentHashMap<Name, NbtAddress>();
     private static long lastModified = 1L;
     private static int alt;
     private static final Logger logger = LoggerFactory.getLogger(Lmhosts.class);

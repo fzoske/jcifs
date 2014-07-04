@@ -21,11 +21,12 @@ package jcifs.dcerpc.ndr;
 
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
+
 import jcifs.util.Encdec;
 
 public class NdrBuffer {
     int referent;
-    HashMap referents;
+    HashMap<Object, Entry> referents;
 
     static class Entry {
         int referent;
@@ -195,11 +196,11 @@ public class NdrBuffer {
         Entry e;
 
         if (referents == null) {
-            referents = new HashMap();
+            referents = new HashMap<Object, Entry>();
             referent = 1;
         }
 
-        if ((e = (Entry)referents.get(obj)) == null) {
+        if ((e = referents.get(obj)) == null) {
             e = new Entry();
             e.referent = referent++;
             e.obj = obj;

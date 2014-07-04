@@ -19,12 +19,15 @@
 
 package jcifs.dcerpc;
 
-import java.net.*;
-import java.io.*;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 
-import jcifs.dcerpc.ndr.NdrBuffer;
-import jcifs.smb.*;
-import jcifs.util.*;
+import jcifs.smb.NtlmPasswordAuthentication;
+import jcifs.smb.SmbFileInputStream;
+import jcifs.smb.SmbFileOutputStream;
+import jcifs.smb.SmbNamedPipe;
+import jcifs.util.Encdec;
 
 public class DcerpcPipeHandle extends DcerpcHandle {
 

@@ -20,10 +20,8 @@ package jcifs.netbios;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.net.SocketException;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
+
 import jcifs.Config;
 import jcifs.util.Hexdump;
 
@@ -144,8 +142,8 @@ public final class NbtAddress {
     private static final int FOREVER = -1;
     private static int nbnsIndex = 0;
 
-    private static final HashMap ADDRESS_CACHE = new HashMap();
-    private static final HashMap LOOKUP_TABLE = new HashMap();
+    private static final HashMap<Name, CacheEntry> ADDRESS_CACHE = new HashMap<Name, CacheEntry>();
+    private static final HashMap<Name, Name> LOOKUP_TABLE = new HashMap<Name, Name>();
 
     static final Name UNKNOWN_NAME = new Name( "0.0.0.0", 0x00, null );
     static final NbtAddress UNKNOWN_ADDRESS = new NbtAddress( UNKNOWN_NAME, 0, false, B_NODE );

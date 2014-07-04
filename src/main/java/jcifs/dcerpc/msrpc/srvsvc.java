@@ -1,9 +1,9 @@
 package jcifs.dcerpc.msrpc;
 
-import jcifs.dcerpc.*;
-import jcifs.dcerpc.ndr.*;
-
-import jcifs.util.Hexdump;
+import jcifs.dcerpc.DcerpcMessage;
+import jcifs.dcerpc.ndr.NdrBuffer;
+import jcifs.dcerpc.ndr.NdrException;
+import jcifs.dcerpc.ndr.NdrObject;
 
 public class srvsvc {
 

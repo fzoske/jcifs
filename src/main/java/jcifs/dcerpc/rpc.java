@@ -1,7 +1,8 @@
 package jcifs.dcerpc;
 
-import jcifs.dcerpc.ndr.*;
-import jcifs.util.*;
+import jcifs.dcerpc.ndr.NdrBuffer;
+import jcifs.dcerpc.ndr.NdrException;
+import jcifs.dcerpc.ndr.NdrObject;
 
 public class rpc {
 

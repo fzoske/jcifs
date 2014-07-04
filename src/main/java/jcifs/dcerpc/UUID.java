@@ -19,7 +19,6 @@
 
 package jcifs.dcerpc;
 
-import jcifs.util.*;
 
 public class UUID extends rpc.uuid_t {
 

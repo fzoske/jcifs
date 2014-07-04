@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import jcifs.Config;
 import jcifs.ntlmssp.NtlmFlags;
@@ -64,9 +65,9 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
 
     private HttpURLConnection connection;
 
-    private Map requestProperties;
+    private Map<String, List<String>> requestProperties;
 
-    private Map headerFields;
+    private Map<String, List<String>> headerFields;
 
     private ByteArrayOutputStream cachedOutput;
 
@@ -85,7 +86,7 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
     public NtlmHttpURLConnection(HttpURLConnection connection) {
         super(connection.getURL());
         this.connection = connection;
-        requestProperties = new HashMap();
+        requestProperties = new HashMap<String, List<String>>();
     }
 
     public void connect() throws IOException {
@@ -153,31 +154,28 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
         return connection.getHeaderField(header);
     }
 
-    private Map getHeaderFields0() {
+    private Map<String, List<String>> getHeaderFields0() {
         if (headerFields != null) return headerFields;
-        Map map = new HashMap();
+        Map<String, List<String>> map = new HashMap<String, List<String>>();
         String key = connection.getHeaderFieldKey(0);
         String value = connection.getHeaderField(0);
         for (int i = 1; key != null || value != null; i++) {
-            List values = (List) map.get(key);
+            List<String> values = map.get(key);
             if (values == null) {
-                values = new ArrayList();
+                values = new ArrayList<String>();
                 map.put(key, values);
             }
             values.add(value);
             key = connection.getHeaderFieldKey(i);
             value = connection.getHeaderField(i);
         }
-        Iterator entries = map.entrySet().iterator();
-        while (entries.hasNext()) {
-            Map.Entry entry = (Map.Entry) entries.next();
-            entry.setValue(Collections.unmodifiableList((List)
-                    entry.getValue()));
+        for (Entry<String, List<String>> entry : map.entrySet()) {
+            entry.setValue(Collections.unmodifiableList(entry.getValue()));
         }
         return (headerFields = Collections.unmodifiableMap(map));
     }
 
-    public Map getHeaderFields() {
+    public Map<String, List<String>> getHeaderFields() {
         if (headerFields != null) return headerFields;
         try {
             handshake();
@@ -306,12 +304,10 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
 
     public void setRequestProperty(String key, String value) {
         if (key == null) throw new NullPointerException();
-        List values = new ArrayList();
+        List<String> values = new ArrayList<String>();
         values.add(value);
         boolean found = false;
-        Iterator entries = requestProperties.entrySet().iterator();
-        while (entries.hasNext()) {
-            Map.Entry entry = (Map.Entry) entries.next();
+        for (Entry<String, List<String>> entry : requestProperties.entrySet()) {
             if (key.equalsIgnoreCase((String) entry.getKey())) {
                 entry.setValue(values);
                 found = true;
@@ -324,24 +320,22 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
 
     public void addRequestProperty(String key, String value) {
         if (key == null) throw new NullPointerException();
-        List values = null;
-        Iterator entries = requestProperties.entrySet().iterator();
-        while (entries.hasNext()) {
-            Map.Entry entry = (Map.Entry) entries.next();
+        List<String> values = null;
+        for (Entry<String, List<String>> entry : requestProperties.entrySet()) {
             if (key.equalsIgnoreCase((String) entry.getKey())) {
-                values = (List) entry.getValue();
+                values = entry.getValue();
                 values.add(value);
                 break;
             }
         }
         if (values == null) {
-            values = new ArrayList();
+            values = new ArrayList<String>();
             values.add(value);
             requestProperties.put(key, values);
         }
         // 1.3-compatible.
         StringBuffer buffer = new StringBuffer();
-        Iterator propertyValues = values.iterator();
+        Iterator<String> propertyValues = values.iterator();
         while (propertyValues.hasNext()) {
             buffer.append(propertyValues.next());
             if (propertyValues.hasNext()) {
@@ -355,13 +349,10 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
         return connection.getRequestProperty(key);
     }
 
-    public Map getRequestProperties() {
-        Map map = new HashMap();
-        Iterator entries = requestProperties.entrySet().iterator();
-        while (entries.hasNext()) {
-            Map.Entry entry = (Map.Entry) entries.next();
-            map.put(entry.getKey(),
-                    Collections.unmodifiableList((List) entry.getValue()));
+    public Map<String, List<String>> getRequestProperties() {
+        Map<String, List<String>> map = new HashMap<String, List<String>>();
+        for (Entry<String, List<String>> entry : requestProperties.entrySet()) {
+            map.put(entry.getKey(), Collections.unmodifiableList(entry.getValue()));
         }
         return Collections.unmodifiableMap(map);
     }
@@ -479,9 +470,8 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
         authMethod = null;
         InputStream errorStream = connection.getErrorStream();
         if (errorStream != null && errorStream.available() != 0) {
-            int count;
             byte[] buf = new byte[1024];
-            while ((count = errorStream.read(buf, 0, 1024)) != -1);
+            while (errorStream.read(buf, 0, 1024) != -1);
         }
         String authHeader;
         if (response == HTTP_UNAUTHORIZED) {
@@ -492,11 +482,9 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
             authProperty = "Proxy-Authorization";
         }
         String authorization = null;
-        List methods = (List) getHeaderFields0().get(authHeader);
+        List<String> methods = getHeaderFields0().get(authHeader);
         if (methods == null) return null;
-        Iterator iterator = methods.iterator();
-        while (iterator.hasNext()) {
-            String currentAuthMethod = (String) iterator.next();
+        for (String currentAuthMethod : methods) {
             if (currentAuthMethod.startsWith("NTLM")) {
                 if (currentAuthMethod.length() == 4) {
                     authMethod = "NTLM";
@@ -532,7 +520,7 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
             String password = Type3Message.getDefaultPassword();
             String userInfo = url.getUserInfo();
             if (userInfo != null) {
-                userInfo = URLDecoder.decode(userInfo);
+                userInfo = URLDecoder.decode(userInfo, "UTF-8");
                 int index = userInfo.indexOf(':');
                 user = (index != -1) ? userInfo.substring(0, index) : userInfo;
                 if (index != -1) password = userInfo.substring(index + 1);
@@ -569,12 +557,10 @@ public class NtlmHttpURLConnection extends HttpURLConnection {
         connection = (HttpURLConnection) connection.getURL().openConnection();
         connection.setRequestMethod(method);
         headerFields = null;
-        Iterator properties = requestProperties.entrySet().iterator();
-        while (properties.hasNext()) {
-            Map.Entry property = (Map.Entry) properties.next();
+        for (Entry<String, List<String>> property : requestProperties.entrySet()) {
             String key = (String) property.getKey();
             StringBuffer value = new StringBuffer();
-            Iterator values = ((List) property.getValue()).iterator();
+            Iterator<String> values = (property.getValue()).iterator();
             while (values.hasNext()) {
                 value.append(values.next());
                 if (values.hasNext()) value.append(", ");

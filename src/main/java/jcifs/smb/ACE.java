@@ -1,7 +1,6 @@
 package jcifs.smb;
 
 import jcifs.util.Hexdump;
-import java.io.IOException;
 
 /**
  * An Access Control Entry (ACE) is an element in a security descriptor
@@ -167,9 +166,6 @@ public class ACE {
      * fragments but currently it does not.
      */
     public String toString() {
-        int count, i;
-        String str;
-
         StringBuffer sb = new StringBuffer();
         sb.append( isAllow() ? "Allow " : "Deny  " );
         appendCol(sb, sid.toDisplayString(), 25);

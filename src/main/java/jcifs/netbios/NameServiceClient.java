@@ -63,7 +63,7 @@ class NameServiceClient implements Runnable {
     private byte[] snd_buf, rcv_buf;
     private DatagramSocket socket;
     private DatagramPacket in, out;
-    private HashMap responseTable = new HashMap();
+    private HashMap<Integer, NameServicePacket> responseTable = new HashMap<Integer, NameServicePacket>();
     private Thread thread;
     private int nextNameTrnId = 0;
     private int[] resolveOrder;

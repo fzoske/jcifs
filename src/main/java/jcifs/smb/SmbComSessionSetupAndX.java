@@ -95,7 +95,7 @@ class SmbComSessionSetupAndX extends AndXServerMessageBlock {
         dstIndex += 2;
         writeInt2( session.transport.maxMpxCount, dst, dstIndex );
         dstIndex += 2;
-        writeInt2( session.transport.VC_NUMBER, dst, dstIndex );
+        writeInt2( SmbTransport.VC_NUMBER, dst, dstIndex );
         dstIndex += 2;
         writeInt4( sessionKey, dst, dstIndex );
         dstIndex += 4;
@@ -132,8 +132,8 @@ class SmbComSessionSetupAndX extends AndXServerMessageBlock {
             dstIndex += writeString( accountName, dst, dstIndex );
             dstIndex += writeString( primaryDomain, dst, dstIndex );
         }
-        dstIndex += writeString( session.transport.NATIVE_OS, dst, dstIndex );
-        dstIndex += writeString( session.transport.NATIVE_LANMAN, dst, dstIndex );
+        dstIndex += writeString( SmbTransport.NATIVE_OS, dst, dstIndex );
+        dstIndex += writeString( SmbTransport.NATIVE_LANMAN, dst, dstIndex );
 
         return dstIndex - start;
     }
@@ -148,15 +148,15 @@ class SmbComSessionSetupAndX extends AndXServerMessageBlock {
             super.toString() +
             ",snd_buf_size=" + session.transport.snd_buf_size +
             ",maxMpxCount=" + session.transport.maxMpxCount +
-            ",VC_NUMBER=" + session.transport.VC_NUMBER +
+            ",VC_NUMBER=" + SmbTransport.VC_NUMBER +
             ",sessionKey=" + sessionKey +
             ",lmHash.length=" + (lmHash == null ? 0 : lmHash.length) +
             ",ntHash.length=" + (ntHash == null ? 0 : ntHash.length) +
             ",capabilities=" + capabilities +
             ",accountName=" + accountName +
             ",primaryDomain=" + primaryDomain +
-            ",NATIVE_OS=" + session.transport.NATIVE_OS +
-            ",NATIVE_LANMAN=" + session.transport.NATIVE_LANMAN + "]" );
+            ",NATIVE_OS=" + SmbTransport.NATIVE_OS +
+            ",NATIVE_LANMAN=" + SmbTransport.NATIVE_LANMAN + "]" );
         return result;
     }
 }

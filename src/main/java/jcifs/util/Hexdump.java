@@ -57,23 +57,31 @@ public class Hexdump {
  */
 
     public static void hexdumpError( Logger logger, String caption, byte[] src, int srcIndex, int length ) {
-        StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
-        logger.error(builder.toString());
+        if (logger.isErrorEnabled()) {
+            StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
+            logger.error(builder.toString());
+        }
     }
     
     public static void hexdumpInfo( Logger logger, String caption, byte[] src, int srcIndex, int length ) {
-        StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
-        logger.info(builder.toString());
+        if (logger.isInfoEnabled()) {
+            StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
+            logger.info(builder.toString());
+        }
     }
     
     public static void hexdumpWarn( Logger logger, String caption, byte[] src, int srcIndex, int length ) {
-        StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
-        logger.warn(builder.toString());
+        if (logger.isWarnEnabled()) {
+            StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
+            logger.warn(builder.toString());
+        }
     }
     
     public static void hexdumpDebug( Logger logger, String caption, byte[] src, int srcIndex, int length ) {
-        StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
-        logger.debug(builder.toString());
+        if (logger.isDebugEnabled()) {
+            StringBuilder builder = hexdumpString(new StringBuilder(), caption, src, srcIndex, length);
+            logger.debug(builder.toString());
+        }
     }
     
     public static StringBuilder hexdumpString( StringBuilder builder, String caption, byte[] src, int srcIndex, int length ) {

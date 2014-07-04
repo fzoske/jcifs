@@ -166,7 +166,6 @@ class Trans2FindFirst2Response extends SmbComTransactionResponse {
         return bufferIndex - start;
     }
     int readDataWireFormat( byte[] buffer, int bufferIndex, int len ) {
-        int start = bufferIndex;
         SmbFindFileBothDirectoryInfo e;
 
         lastNameBufferIndex = bufferIndex + lastNameOffset;

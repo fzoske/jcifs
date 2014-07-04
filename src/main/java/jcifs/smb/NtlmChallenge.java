@@ -24,6 +24,8 @@ import jcifs.util.Hexdump;
 
 public final class NtlmChallenge implements Serializable {
 
+    private static final long serialVersionUID = 2484853610174848092L;
+    
     public byte[] challenge;
     public UniAddress dc;
 

@@ -19,13 +19,13 @@
 
 package jcifs.dcerpc;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.security.Principal;
 
-import jcifs.smb.NtlmPasswordAuthentication;
-import jcifs.util.Hexdump;
 import jcifs.dcerpc.ndr.NdrBuffer;
+import jcifs.smb.NtlmPasswordAuthentication;
 
 public abstract class DcerpcHandle implements DcerpcConstants {
 
@@ -119,21 +119,21 @@ public abstract class DcerpcHandle implements DcerpcConstants {
     }
 
     public void bind() throws DcerpcException, IOException {
-synchronized (this) {
-        try {
-            state = 1;
-            DcerpcMessage bind = new DcerpcBind(binding, this);
-            sendrecv(bind);
-        } catch (IOException ioe) {
-            state = 0;
-            throw ioe;
+        synchronized (this) {
+            try {
+                state = 1;
+                DcerpcMessage bind = new DcerpcBind(binding, this);
+                sendrecv(bind);
+            } catch (IOException ioe) {
+                state = 0;
+                throw ioe;
+            }
         }
-}
     }
     public void sendrecv(DcerpcMessage msg) throws DcerpcException, IOException {
         byte[] stub, frag;
         NdrBuffer buf, fbuf;
-        boolean isLast, isDirect;
+        boolean isDirect;
         DcerpcException de;
 
         if (state == 0) {

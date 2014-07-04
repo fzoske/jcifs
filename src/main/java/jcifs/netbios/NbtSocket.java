@@ -107,7 +107,7 @@ public class NbtSocket extends Socket {
             out.write( buffer, 0, ssp0.writeWireFormat( buffer, 0 ));
 
             setSoTimeout( soTimeout );
-            type = ssp0.readPacketType( in, buffer, 0 );
+            type = SessionServicePacket.readPacketType( in, buffer, 0 );
         } catch( IOException ioe ) {
             close();
             throw ioe;

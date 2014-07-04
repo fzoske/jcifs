@@ -25,6 +25,7 @@ import jcifs.util.Hexdump;
 import jcifs.smb.WinError;
 
 public class DcerpcException extends IOException implements DcerpcError, WinError {
+    private static final long serialVersionUID = -6113895861333916945L;
 
     static String getMessageByDcerpcError(int errcode) {
         int min = 0;
