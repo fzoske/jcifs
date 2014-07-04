@@ -22,7 +22,14 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import jcifs.executors.WorkManager;
+import jcifs.executors.WorkManagerProvider;
 import jcifs.netbios.Lmhosts;
 import jcifs.netbios.NbtAddress;
 
@@ -58,7 +65,9 @@ public class UniAddress {
     private static int[] resolveOrder;
     private static InetAddress baddr;
 
-    private static final Logger logger = LoggerFactory.getLogger(UniAddress.class);
+    private static Logger logger = LoggerFactory.getLogger(UniAddress.class);
+    
+    private static final WorkManager wm;
 
     static {
         String ro = Config.getProperty( "jcifs.resolveOrder" );
@@ -116,8 +125,9 @@ public class UniAddress {
             resolveOrder = new int[i];
             System.arraycopy( tmp, 0, resolveOrder, 0, i );
         }
+        wm = WorkManagerProvider.getWorkManager();
     }
-
+    
     static class Sem {
         Sem( int count ) {
             this.count = count;
@@ -125,67 +135,84 @@ public class UniAddress {
         int count;
     }
 
-    static class QueryThread extends Thread {
+    static class Result {
+        
+        final UnknownHostException uhe;
+        final NbtAddress addr;
+        
+        public Result(UnknownHostException uhe, NbtAddress addr) {
+            this.uhe = uhe;
+            this.addr = addr;
+        }
+        
+    }
     
+    static class QueryTask implements Callable<Result> {
+
         Sem sem;
         String host, scope;
         int type;
-        NbtAddress ans = null;
         InetAddress svr;
-        UnknownHostException uhe;
     
-        QueryThread( Sem sem, String host, int type,
-                        String scope, InetAddress svr ) {
-            super( "JCIFS-QueryThread: " + host );
+        QueryTask( Sem sem, String host, int type, String scope, InetAddress svr ) {
             this.sem = sem;
             this.host = host;
             this.type = type;
             this.scope = scope;
             this.svr = svr;
         }
-        public void run() {
+        
+        @Override
+        public Result call() throws Exception {
             try {
-                ans = NbtAddress.getByName( host, type, scope, svr );
+                return new Result(null, NbtAddress.getByName( host, type, scope, svr ));
             } catch( UnknownHostException uhe ) {
-                this.uhe = uhe;
+                return new Result(uhe, null);
             } catch( Exception ex ) {
-                this.uhe = new UnknownHostException( ex.getMessage() );
-            } finally {
-                synchronized( sem ) {
+                return new Result(new UnknownHostException( ex.getMessage() ), null);
+            }  finally {
+                synchronized (sem) {
                     sem.count--;
                     sem.notify();
                 }
             }
         }
+        
     }
-
+    
     static NbtAddress lookupServerOrWorkgroup( String name, InetAddress svr )
                                                     throws UnknownHostException {
         Sem sem = new Sem( 2 );
         int type = NbtAddress.isWINS( svr ) ? 0x1b : 0x1d;
 
-        QueryThread q1x = new QueryThread( sem, name, type, null, svr );
-        QueryThread q20 = new QueryThread( sem, name, 0x20, null, svr );
-        q1x.setDaemon( true );
-        q20.setDaemon( true );
+        Result res = null;
+        
+        Future<Result> q1xResult = wm.submit(new QueryTask(sem, name, type, null, svr));
+        Future<Result> q20Result = wm.submit(new QueryTask(sem, name, 0x20, null, svr));
         try {
+            
             synchronized( sem ) {
-                q1x.start();
-                q20.start();
 
-                while( sem.count > 0 && q1x.ans == null && q20.ans == null ) {
+                while( sem.count > 0 && (res == null || res.addr == null)) {
+                    res = q1xResult.get(0, TimeUnit.SECONDS);
+                    if (res == null || res.addr == null) res = q20Result.get(0, TimeUnit.SECONDS);
+                    if (res != null && res.addr != null) return res.addr; 
                     sem.wait();
                 }
+                
             }
-        } catch( InterruptedException ie ) {
+            if (res != null) {
+                throw res.uhe;
+            } else {
+                throw new UnknownHostException( name );
+            }
+            
+        } catch( TimeoutException e ) {
             throw new UnknownHostException( name );
-        }
-        if( q1x.ans != null ) {
-            return q1x.ans;
-        } else if( q20.ans != null ) {
-            return q20.ans;
-        } else {
-            throw q1x.uhe;
+        } catch( ExecutionException e ) {
+            throw new UnknownHostException( name );
+        } catch( InterruptedException e ) {
+            throw new UnknownHostException( name );
         }
     }
 
